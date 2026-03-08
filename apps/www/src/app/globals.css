@@ -1,0 +1,136 @@
+@import url("https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,300;6..72,400;6..72,500&family=Syne:wght@500;700;800&family=JetBrains+Mono:wght@400;600&display=swap");
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --ink: #0a0c10;
+  --ink2: #12151c;
+  --ink3: #1a1e28;
+  --rule: rgba(255, 255, 255, 0.08);
+  --rule2: rgba(255, 255, 255, 0.14);
+  --lead: #e8eaf0;
+  --body: #8a90a0;
+  --faint: #3a4055;
+  --blue: #2b6feb;
+  --blue2: #4a8bf5;
+  --teal: #0fb8ac;
+  --amber: #f5a623;
+  --red: #e8554e;
+  --green: #34c97b;
+
+  --display: "Syne", "Trebuchet MS", sans-serif;
+  --serif: "Newsreader", Georgia, serif;
+  --mono: "JetBrains Mono", Menlo, monospace;
+
+  /* shadcn/ui mapping */
+  --background: var(--ink);
+  --foreground: var(--lead);
+  --card: var(--ink2);
+  --card-foreground: var(--lead);
+  --popover: var(--ink2);
+  --popover-foreground: var(--lead);
+  --primary: var(--blue);
+  --primary-foreground: #ffffff;
+  --secondary: var(--ink3);
+  --secondary-foreground: var(--lead);
+  --muted: var(--ink3);
+  --muted-foreground: var(--body);
+  --accent: var(--ink2);
+  --accent-foreground: var(--lead);
+  --destructive: var(--red);
+  --destructive-foreground: #ffffff;
+  --border: var(--rule);
+  --input: var(--rule);
+  --ring: var(--blue);
+  --radius: 0.625rem;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  scroll-behavior: smooth;
+  background-color: var(--ink);
+  color: var(--lead);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  font-family: var(--serif);
+  font-size: 17px;
+  line-height: 1.65;
+  position: relative;
+}
+
+/* Grain Overlay */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23g)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.5;
+}
+
+@theme inline {
+  --color-ink: var(--ink);
+  --color-ink2: var(--ink2);
+  --color-ink3: var(--ink3);
+  --color-rule: var(--rule);
+  --color-rule2: var(--rule2);
+  --color-lead: var(--lead);
+  --color-body: var(--body);
+  --color-faint: var(--faint);
+  --color-blue: var(--blue);
+  --color-blue2: var(--blue2);
+  --color-teal: var(--teal);
+  --color-amber: var(--amber);
+  --color-red: var(--red);
+  --color-green: var(--green);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-sm: calc(var(--radius) * 0.6);
+
+  --font-serif: var(--serif);
+  --font-mono: var(--mono);
+  --font-display: var(--display);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}

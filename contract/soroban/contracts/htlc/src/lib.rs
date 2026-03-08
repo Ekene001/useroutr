@@ -104,7 +104,6 @@ impl HTLCContract {
             },
         );
 
-        // Emit event for relay to detect
         Locked {
             lock_id: lock_id.clone(),
             amount,
