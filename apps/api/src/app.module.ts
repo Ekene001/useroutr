@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 import { RedisModule } from '@nestjs-modules/ioredis';
 import { BullModule } from '@nestjs/bullmq';
 import { AppController } from './app.controller';
@@ -19,9 +20,14 @@ import { RelayModule } from './modules/relay/relay.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { PrismaModule } from './modules/prisma/prisma.module';
+import { PrismaService } from './modules/prisma/prisma.service';
+
 
 @Module({
   imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
     PrismaModule,
     AuthModule,
     RedisModule.forRoot({
