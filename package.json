@@ -9,7 +9,10 @@
   "scripts": {
     "bootstrap": "npm install",
     "dev": "npm run dev --workspace=www",
-    "start:api": "npm --workspace=api run start:dev"
+    "build": "npm run build --workspace=www",
+    "start:api": "npm --workspace=api run start:dev",
+    "dev:dashboard": "npm run dev --workspace=dashboard",
+    "dev:checkout": "npm run dev --workspace=checkout"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^7.0.0",

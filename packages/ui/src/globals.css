@@ -1,0 +1,137 @@
+/*
+ * Tavvio Design System Tokens
+ * Follows the design system established in apps/www
+ * Consumed by: dashboard, checkout, and any future apps
+ */
+
+:root {
+  /* ── Background tiers ── */
+  --ink: #0a0c10;
+  --ink2: #12151c;
+  --ink3: #1a1e28;
+
+  /* ── Foreground / text ── */
+  --lead: #e8eaf0;
+  --body: #8a90a0;
+  --faint: #3a4055;
+
+  /* ── Borders ── */
+  --rule: rgba(255, 255, 255, 0.08);
+  --rule2: rgba(255, 255, 255, 0.14);
+
+  /* ── Brand palette ── */
+  --blue: #2b6feb;
+  --blue2: #4a8bf5;
+  --teal: #0fb8ac;
+  --amber: #f5a623;
+  --red: #e8554e;
+  --green: #34c97b;
+  --purple: #6f42c1;
+
+  /* ── Radius scale ── */
+  --radius: 0.625rem;
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-xl: calc(var(--radius) * 1.6);
+
+  /* ── Shadows ── */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.4);
+
+  /* ── shadcn / component token mapping ── */
+  --background: var(--ink);
+  --foreground: var(--lead);
+  --card: var(--ink2);
+  --card-foreground: var(--lead);
+  --popover: var(--ink2);
+  --popover-foreground: var(--lead);
+  --primary: var(--blue);
+  --primary-foreground: #ffffff;
+  --secondary: var(--ink3);
+  --secondary-foreground: var(--lead);
+  --muted: var(--ink3);
+  --muted-foreground: var(--body);
+  --accent: var(--ink2);
+  --accent-foreground: var(--lead);
+  --destructive: var(--red);
+  --destructive-foreground: #ffffff;
+  --success: var(--green);
+  --success-foreground: #ffffff;
+  --warning: var(--amber);
+  --warning-foreground: #ffffff;
+  --border: var(--rule);
+  --input: var(--rule);
+  --ring: var(--blue);
+
+  /* ── Typography ── */
+  --font-display: "Inter", "Trebuchet MS", sans-serif;
+  --font-body: "Open Sans", sans-serif;
+  --font-mono: "IBM Plex Mono", "JetBrains Mono", Menlo, monospace;
+
+  /* ── Spacing base ── */
+  --space: 8px;
+}
+
+/* ── Light mode override ── */
+.light {
+  --ink: #ffffff;
+  --ink2: #f8f9fb;
+  --ink3: #f0f2f5;
+
+  --lead: #0a0c10;
+  --body: #5f6775;
+  --faint: #8a90a0;
+
+  --rule: #e2e5eb;
+  --rule2: #cdd1d9;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+
+  --background: #ffffff;
+  --foreground: #0a0c10;
+  --card: #f8f9fb;
+  --card-foreground: #0a0c10;
+  --popover: #ffffff;
+  --popover-foreground: #0a0c10;
+  --secondary: #f0f2f5;
+  --secondary-foreground: #0a0c10;
+  --muted: #f0f2f5;
+  --muted-foreground: #5f6775;
+  --accent: #f8f9fb;
+  --accent-foreground: #0a0c10;
+  --border: #e2e5eb;
+  --input: #e2e5eb;
+}
+
+/* ── Skeleton shimmer ── */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--muted) 25%,
+    var(--accent) 50%,
+    var(--muted) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: var(--radius-md);
+}
+
+/* ── Toast stack animation ── */
+@keyframes toast-slide-in {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes toast-slide-out {
+  from { transform: translateX(0); opacity: 1; }
+  to { transform: translateX(100%); opacity: 0; }
+}

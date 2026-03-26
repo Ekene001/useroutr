@@ -1,0 +1,39 @@
+{
+  "name": "dashboard",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --port 3001",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "next": "latest",
+    "react": "^19",
+    "react-dom": "^19",
+    "tailwindcss": "^4",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "tailwind-merge": "^3.5.0",
+    "@tanstack/react-query": "^5",
+    "socket.io-client": "^4",
+    "recharts": "^2",
+    "zustand": "^5",
+    "zod": "^3",
+    "@phosphor-icons/react": "^2",
+    "date-fns": "^3",
+    "framer-motion": "^11",
+    "@tavvio/types": "*",
+    "@tavvio/ui": "*"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "typescript": "^5",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@types/node": "^20",
+    "eslint": "^9",
+    "eslint-config-next": "latest"
+  }
+}
