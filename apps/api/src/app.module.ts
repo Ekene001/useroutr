@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 import { RedisModule } from '@nestjs-modules/ioredis';
 import { BullModule } from '@nestjs/bullmq';
 import { AppController } from './app.controller';
@@ -22,9 +23,14 @@ import { PrismaModule } from './modules/prisma/prisma.module';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { IdempotencyInterceptor } from './common/interceptors/idempotency.interceptor';
+import { PrismaService } from './modules/prisma/prisma.service';
+
 
 @Module({
   imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
     PrismaModule,
     AuthModule,
     RedisModule.forRoot({
