@@ -2,7 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import { Card, CardContent, Button } from "@tavvio/ui";
-import { CopySimple, QrCode, Trash } from "@phosphor-icons/react";
+import { QrCode, Trash } from "@phosphor-icons/react";
 import { formatCurrency } from "@/lib/utils";
 import { LinkStatusBadge } from "./LinkStatusBadge";
 import { CopyButton } from "./CopyButton";
@@ -10,18 +10,17 @@ import type { PaymentLink } from "@tavvio/types";
 
 interface LinkCardProps {
   link: PaymentLink;
-  onCopy: (url: string) => void;
   onQRCode: (link: PaymentLink) => void;
   onDeactivate: (link: PaymentLink) => void;
 }
 
-export function LinkCard({ link, onCopy, onQRCode, onDeactivate }: LinkCardProps) {
+export function LinkCard({ link, onQRCode, onDeactivate }: LinkCardProps) {
   const isExpired = link.status === "expired";
   const isDeactivated = link.status === "deactivated";
   const canDeactivate = !isExpired && !isDeactivated;
 
-  const expiryLabel = link.expiryDate
-    ? new Date(link.expiryDate).toLocaleDateString("en-US", {
+  const expiryLabel = link.expiresAt
+    ? new Date(link.expiresAt).toLocaleDateString("en-US", {
         month: "short",
         day: "numeric",
         year: "numeric",
@@ -39,12 +38,9 @@ export function LinkCard({ link, onCopy, onQRCode, onDeactivate }: LinkCardProps
       )}
     >
       <CardContent className="space-y-4 p-0">
-        {/* Header: Name + Status */}
+        {/* Header: ID + Status */}
         <div className="flex items-start justify-between">
           <div className="space-y-1">
-            <h3 className="font-[var(--font-display)] text-base font-semibold text-[var(--foreground)]">
-              {link.name}
-            </h3>
             <p className="text-xs text-[var(--muted-foreground)]">{link.id}</p>
           </div>
           <LinkStatusBadge status={link.status} />
@@ -61,6 +57,13 @@ export function LinkCard({ link, onCopy, onQRCode, onDeactivate }: LinkCardProps
             {isSingleUse ? "Single-use" : "Multi-use"}
           </span>
         </div>
+
+        {/* Description */}
+        {link.description && (
+          <p className="text-sm text-[var(--muted-foreground)] line-clamp-2">
+            {link.description}
+          </p>
+        )}
 
         {/* Usage + Expiry */}
         <div className="flex items-center justify-between text-sm">

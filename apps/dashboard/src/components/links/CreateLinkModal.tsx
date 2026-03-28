@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Modal, Button, Input } from "@tavvio/ui";
 import { CurrencyInput } from "@tavvio/ui";
 import { DatePicker } from "@tavvio/ui";
-import type { CreatePaymentLinkInput, LinkType } from "@tavvio/types";
+import type { CreatePaymentLinkInput } from "@tavvio/types";
 
 interface CreateLinkModalProps {
   open: boolean;
@@ -19,7 +19,6 @@ export function CreateLinkModal({
   onCreate,
   isLoading,
 }: CreateLinkModalProps) {
-  const [name, setName] = useState("");
   const [amountType, setAmountType] = useState<"fixed" | "open">("fixed");
   const [amount, setAmount] = useState<number | undefined>(undefined);
   const [currency, setCurrency] = useState("USD");
@@ -30,27 +29,25 @@ export function CreateLinkModal({
 
   const handleSubmit = () => {
     const data: CreatePaymentLinkInput = {
-      name,
       description: description || undefined,
-      type: isSingleUse ? "single-use" : "multi-use",
-      currency,
+      single_use: isSingleUse,
     };
 
     if (amountType === "fixed" && amount) {
       data.amount = amount;
+      data.currency = currency;
     }
 
     if (hasExpiry && expiryDate) {
-      data.expiryDate = new Date(expiryDate).toISOString();
+      data.expires_at = new Date(expiryDate).toISOString();
     }
 
     onCreate(data);
   };
 
-  const canSubmit = name.trim().length > 0 && (!hasExpiry || expiryDate !== "");
+  const canSubmit = !hasExpiry || expiryDate !== "";
 
   const handleReset = () => {
-    setName("");
     setAmountType("fixed");
     setAmount(undefined);
     setCurrency("USD");
@@ -129,14 +126,6 @@ export function CreateLinkModal({
             </label>
           </div>
         </div>
-
-        {/* Name */}
-        <Input
-          label="Link Name"
-          placeholder="e.g., Design Consultation"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-        />
 
         {/* Description */}
         <Input

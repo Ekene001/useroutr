@@ -3,6 +3,7 @@
 import { Modal, Button } from "@tavvio/ui";
 import { CopySimple, QrCode, WhatsappLogo, Envelope, ChatCircleText } from "@phosphor-icons/react";
 import { useState } from "react";
+import { QRCodeSVG } from "qrcode.react";
 import { QRCodeModal } from "./QRCodeModal";
 
 interface LinkCreatedModalProps {
@@ -105,11 +106,11 @@ export function LinkCreatedModal({
             <label className="text-sm font-medium text-[var(--foreground)]">
               QR Code
             </label>
-            <div className="flex items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--background)] p-4">
-              <img
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(linkUrl)}`}
-                alt="QR Code"
-                className="h-32 w-32 object-contain"
+            <div className="flex items-center justify-center rounded-lg border border-[var(--border)] bg-white p-4">
+              <QRCodeSVG
+                value={linkUrl}
+                size={150}
+                level="H"
               />
             </div>
             <div className="flex justify-center">

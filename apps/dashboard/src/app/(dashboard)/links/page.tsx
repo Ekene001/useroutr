@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button, Input, Select, EmptyState, Modal } from "@tavvio/ui";
 import { Plus, MagnifyingGlass, Link as LinkIcon } from "@phosphor-icons/react";
 import { useToast } from "@tavvio/ui";
@@ -16,6 +16,23 @@ import {
 import { useDashboardSocket } from "@/hooks/useDashboardSocket";
 import type { PaymentLink, CreatePaymentLinkInput } from "@tavvio/types";
 
+// Simple debounce hook
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+}
+
 export default function PaymentLinksPage() {
   const { toast } = useToast();
   const [search, setSearch] = useState("");
@@ -26,9 +43,12 @@ export default function PaymentLinksPage() {
   const [selectedLinkForQR, setSelectedLinkForQR] = useState<PaymentLink | null>(null);
   const [linkToDeactivate, setLinkToDeactivate] = useState<PaymentLink | null>(null);
 
+  // Debounce search input (300ms)
+  const debouncedSearch = useDebounce(search, 300);
+
   const { data, isLoading, refetch } = usePaymentLinks({
     status: statusFilter !== "all" ? statusFilter : undefined,
-    search: search || undefined,
+    search: debouncedSearch || undefined,
   });
 
   const createMutation = useCreatePaymentLink();
@@ -85,6 +105,13 @@ export default function PaymentLinksPage() {
 
   const links = data?.data ?? [];
   const hasLinks = links.length > 0;
+  
+  // Determine if filters are active
+  const hasActiveFilters = debouncedSearch.length > 0 || statusFilter !== "all";
+  
+  // Show empty state for "no links" vs "no results"
+  const showNoResults = hasActiveFilters && !hasLinks;
+  const showNoLinks = !hasActiveFilters && !hasLinks;
 
   return (
     <div className="space-y-6">
@@ -147,16 +174,30 @@ export default function PaymentLinksPage() {
             <LinkCard
               key={link.id}
               link={link}
-              onCopy={(url) => {
-                navigator.clipboard.writeText(url);
-                toast("Link copied to clipboard!", "success");
-              }}
               onQRCode={handleQRCode}
               onDeactivate={handleDeactivate}
             />
           ))}
         </div>
-      ) : (
+      ) : showNoResults ? (
+        <EmptyState
+          icon={LinkIcon}
+          title="No links match your filters"
+          description="Try adjusting your search or filter criteria"
+          action={
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setSearch("");
+                setStatusFilter("all");
+              }}
+            >
+              Clear Filters
+            </Button>
+          }
+        />
+      ) : showNoLinks ? (
         <EmptyState
           icon={LinkIcon}
           title="No payment links yet"
@@ -168,7 +209,7 @@ export default function PaymentLinksPage() {
             </Button>
           }
         />
-      )}
+      ) : null}
 
       {/* Create Link Modal */}
       <CreateLinkModal
@@ -186,7 +227,7 @@ export default function PaymentLinksPage() {
             if (!open) setCreatedLink(null);
           }}
           linkUrl={createdLink.url}
-          linkName={createdLink.name}
+          linkName={createdLink.description || "Payment Link"}
         />
       )}
 
@@ -196,7 +237,7 @@ export default function PaymentLinksPage() {
           open={isQRModalOpen}
           onOpenChange={setIsQRModalOpen}
           url={selectedLinkForQR.url}
-          linkName={selectedLinkForQR.name}
+          linkName={selectedLinkForQR.description || "Payment Link"}
         />
       )}
 
@@ -230,7 +271,7 @@ export default function PaymentLinksPage() {
       >
         {linkToDeactivate && (
           <div className="rounded-lg border border-[var(--border)] bg-[var(--background)] p-4">
-            <p className="font-medium text-[var(--foreground)]">{linkToDeactivate.name}</p>
+            <p className="font-medium text-[var(--foreground)]">{linkToDeactivate.description || linkToDeactivate.id}</p>
             <p className="mt-1 text-sm text-[var(--muted-foreground)]">
               {linkToDeactivate.url}
             </p>
