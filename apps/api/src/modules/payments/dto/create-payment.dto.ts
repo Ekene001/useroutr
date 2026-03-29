@@ -2,13 +2,13 @@ import { IsNumber, IsString, IsOptional, IsArray, IsEmail, IsObject, IsUrl } fro
 
 export class CreatePaymentDto {
   @IsString()
-  quoteId: string;
+  quoteId!: string;
 
   @IsNumber()
-  amount: number;                    // in smallest currency unit (cents, for USD)
+  amount!: number;                    // in smallest currency unit (cents, for USD)
 
   @IsString()
-  currency: string;                  // "USD"
+  currency!: string;                  // "USD"
 
   @IsString()
   @IsOptional()

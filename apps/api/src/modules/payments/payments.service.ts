@@ -1,6 +1,6 @@
 import { Injectable, Logger, NotFoundException, ConflictException, OnModuleInit } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { PaymentStatus, Payment } from '../../generated/prisma';
+import { PaymentStatus, Payment } from '@prisma/client';
 import { EventsGateway } from '../events/events/events.gateway';
 import { QuotesService } from '../quotes/quotes.service';
 import { WebhooksService } from '../webhooks/webhooks.service';
@@ -110,7 +110,7 @@ export class PaymentsService implements OnModuleInit {
     };
   }
 
-  async updateStatus(paymentId: string, status: PaymentStatus, extra?: Partial<Payment>): Promise<Payment> {
+  async updateStatus(paymentId: string, status: PaymentStatus, extra?: Record<string, unknown>): Promise<Payment> {
     this.logger.log(`Updating payment ${paymentId} status to ${status}`);
 
     const payment = await this.prisma.payment.update({
@@ -119,7 +119,7 @@ export class PaymentsService implements OnModuleInit {
         status,
         ...extra,
         ...(status === PaymentStatus.COMPLETED ? { completedAt: new Date() } : {}),
-      },
+      } as any,
     });
 
     // Emit WebSocket event
@@ -262,9 +262,9 @@ export class PaymentsService implements OnModuleInit {
   async initiateRefund(paymentId: string): Promise<Payment> {
     const payment = await this.getById(paymentId);
     
-    const refundableStatuses = [
-        PaymentStatus.SOURCE_LOCKED, 
-        PaymentStatus.STELLAR_LOCKED, 
+    const refundableStatuses: PaymentStatus[] = [
+        PaymentStatus.SOURCE_LOCKED,
+        PaymentStatus.STELLAR_LOCKED,
         PaymentStatus.PROCESSING,
         PaymentStatus.COMPLETED
     ];
