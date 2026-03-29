@@ -1,12 +1,16 @@
 import {
+  BadRequestException,
+  ConflictException,
   Injectable,
   Logger,
   NotFoundException,
-  ConflictException,
   OnModuleInit,
+  ServiceUnavailableException,
 } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { ConfigService } from '@nestjs/config';
+import Stripe from 'stripe';
 import { PaymentStatus, Payment, Prisma } from '@prisma/client';
+import { PrismaService } from '../prisma/prisma.service';
 import { EventsService } from '../events/events/events.service';
 import { QuotesService } from '../quotes/quotes.service';
 import { WebhooksService } from '../webhooks/webhooks.service';
@@ -17,11 +21,44 @@ import { PaymentResponseDto } from './dto/payment-response.dto';
 import { SourceLockEvent } from '@tavvio/types';
 import * as crypto from 'crypto';
 
+interface CheckoutLineItem {
+  label: string;
+  amount: number;
+}
+
+interface CheckoutPaymentResponse {
+  id: string;
+  amount: number;
+  currency: string;
+  status: string;
+  merchantName: string;
+  merchantLogo?: string;
+  description?: string;
+  lineItems?: CheckoutLineItem[];
+  expiresAt?: string;
+}
+
+interface CardSessionResponse {
+  clientSecret: string;
+}
+
+type PaymentWithRelations = Payment & {
+  merchant: {
+    id: string;
+    name: string;
+    webhookUrl: string | null;
+  };
+  quote: {
+    expiresAt: Date;
+  };
+};
+
 @Injectable()
 export class PaymentsService implements OnModuleInit {
   private readonly logger = new Logger(PaymentsService.name);
   private readonly CHECKOUT_URL =
     process.env.CHECKOUT_URL || 'https://checkout.useroutr.io';
+  private readonly stripe: Stripe | null;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -29,7 +66,11 @@ export class PaymentsService implements OnModuleInit {
     private readonly quotesService: QuotesService,
     private readonly webhooksService: WebhooksService,
     private readonly stellarService: StellarService,
-  ) {}
+    private readonly configService: ConfigService,
+  ) {
+    const secretKey = this.configService.get<string>('STRIPE_SECRET_KEY');
+    this.stripe = secretKey ? new Stripe(secretKey) : null;
+  }
 
   async getById(id: string): Promise<Payment> {
     const payment = await this.prisma.payment.findUnique({
@@ -178,7 +219,9 @@ export class PaymentsService implements OnModuleInit {
       }
     } catch (err) {
       this.logger.error(
-        `Failed to process expired payments: ${err instanceof Error ? err.message : String(err)}`,
+        `Failed to process expired payments: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
       );
     }
   }
@@ -256,6 +299,316 @@ export class PaymentsService implements OnModuleInit {
       created_at: payment.createdAt,
       expires_at: new Date(payment.createdAt.getTime() + 30 * 60 * 1000),
     };
+  }
+
+  private async getByIdWithRelations(
+    paymentId: string,
+  ): Promise<PaymentWithRelations> {
+    const payment = await this.prisma.payment.findUnique({
+      where: { id: paymentId },
+      include: { merchant: true, quote: true },
+    });
+    if (!payment) throw new NotFoundException('Payment not found');
+    return payment as PaymentWithRelations;
+  }
+
+  async getCheckoutPayment(paymentId: string): Promise<CheckoutPaymentResponse> {
+    const payment = await this.getByIdWithRelations(paymentId);
+    const metadata = this.asRecord(payment.metadata);
+    const description = this.readString(metadata.description);
+    const merchantLogo = this.readString(metadata.merchantLogo);
+    const lineItems = this.readLineItems(metadata.lineItems);
+
+    return {
+      id: payment.id,
+      amount: this.toNumber(payment.sourceAmount),
+      currency: this.getCardCurrency(payment.sourceAsset).toUpperCase(),
+      status: payment.status,
+      merchantName: payment.merchant.name,
+      merchantLogo: merchantLogo ?? undefined,
+      description: description ?? undefined,
+      lineItems:
+        lineItems.length > 0
+          ? lineItems
+          : [
+              {
+                label: description ?? 'Payment total',
+                amount: this.toNumber(payment.sourceAmount),
+              },
+            ],
+      expiresAt: payment.quote.expiresAt.toISOString(),
+    };
+  }
+
+  async createCardSession(paymentId: string): Promise<CardSessionResponse> {
+    if (!this.stripe) {
+      throw new ServiceUnavailableException(
+        'Stripe is not configured on the API.',
+      );
+    }
+
+    const payment = await this.getByIdWithRelations(paymentId);
+
+    if (
+      payment.status === PaymentStatus.COMPLETED ||
+      payment.status === PaymentStatus.REFUNDED
+    ) {
+      throw new ConflictException(
+        `Payment ${payment.id} can no longer accept card sessions.`,
+      );
+    }
+
+    if (payment.status === PaymentStatus.EXPIRED) {
+      throw new ConflictException(`Payment ${payment.id} has expired.`);
+    }
+
+    const amount = this.toMinorUnits(payment.sourceAmount);
+    const currency = this.getCardCurrency(payment.sourceAsset);
+
+    const paymentIntent = await this.stripe.paymentIntents.create({
+      amount,
+      currency,
+      payment_method_types: ['card'],
+      metadata: {
+        paymentId: payment.id,
+        merchantId: payment.merchantId,
+      },
+      description: `Tavvio checkout payment ${payment.id}`,
+    });
+
+    if (!paymentIntent.client_secret) {
+      throw new ServiceUnavailableException(
+        'Stripe did not return a client secret for this payment.',
+      );
+    }
+
+    const nextStatus: PaymentStatus =
+      payment.status === PaymentStatus.FAILED
+        ? PaymentStatus.PENDING
+        : payment.status;
+
+    await this.prisma.payment.update({
+      where: { id: payment.id },
+      data: {
+        status: nextStatus,
+        metadata: this.mergeMetadata(payment.metadata, {
+          paymentMethod: 'card',
+          stripe: {
+            paymentIntentId: paymentIntent.id,
+            clientSecretIssuedAt: new Date().toISOString(),
+            currency,
+          },
+        }),
+      },
+    });
+
+    return {
+      clientSecret: paymentIntent.client_secret,
+    };
+  }
+
+  async handleStripeWebhook(
+    signature: string | undefined,
+    rawBody: Buffer | undefined,
+  ): Promise<void> {
+    if (!this.stripe) {
+      throw new ServiceUnavailableException(
+        'Stripe is not configured on the API.',
+      );
+    }
+
+    const webhookSecret = this.configService.get<string>('STRIPE_WEBHOOK_SECRET');
+    if (!webhookSecret) {
+      throw new ServiceUnavailableException(
+        'Stripe webhook secret is not configured on the API.',
+      );
+    }
+
+    if (!signature || !rawBody) {
+      throw new BadRequestException('Missing Stripe signature or raw body.');
+    }
+
+    const event = this.stripe.webhooks.constructEvent(
+      rawBody,
+      signature,
+      webhookSecret,
+    );
+
+    if (event.type === 'payment_intent.succeeded') {
+      await this.handlePaymentIntentSucceeded(event);
+      return;
+    }
+
+    if (event.type === 'payment_intent.payment_failed') {
+      await this.handlePaymentIntentFailed(event);
+    }
+  }
+
+  private async handlePaymentIntentSucceeded(event: Stripe.Event) {
+    const paymentIntent = event.data.object as Stripe.PaymentIntent;
+    const paymentId = paymentIntent.metadata.paymentId;
+
+    if (!paymentId) {
+      this.logger.warn(
+        `Stripe event ${event.id} is missing paymentId metadata; skipping.`,
+      );
+      return;
+    }
+
+    const payment = await this.getById(paymentId);
+    const updatedMetadata = this.mergeMetadata(payment.metadata, {
+      paymentMethod: 'card',
+      stripe: {
+        paymentIntentId: paymentIntent.id,
+        status: paymentIntent.status,
+        eventId: event.id,
+        succeededAt: new Date().toISOString(),
+      },
+    });
+
+    await this.prisma.$transaction([
+      this.prisma.payment.update({
+        where: { id: payment.id },
+        data: {
+          status: PaymentStatus.COMPLETED,
+          completedAt: new Date(),
+          metadata: updatedMetadata,
+        },
+      }),
+      this.prisma.webhookEvent.create({
+        data: {
+          merchantId: payment.merchantId,
+          paymentId: payment.id,
+          eventType: 'payment.completed',
+          payload: {
+            paymentId: payment.id,
+            merchantId: payment.merchantId,
+            amount: this.toNumber(payment.sourceAmount),
+            currency: this.getCardCurrency(payment.sourceAsset).toUpperCase(),
+            provider: 'stripe',
+            stripePaymentIntentId: paymentIntent.id,
+            settlementStatus: 'queued',
+          } as Prisma.InputJsonValue,
+        },
+      }),
+    ]);
+  }
+
+  private async handlePaymentIntentFailed(event: Stripe.Event) {
+    const paymentIntent = event.data.object as Stripe.PaymentIntent;
+    const paymentId = paymentIntent.metadata.paymentId;
+
+    if (!paymentId) {
+      this.logger.warn(
+        `Stripe event ${event.id} is missing paymentId metadata; skipping.`,
+      );
+      return;
+    }
+
+    const payment = await this.getById(paymentId);
+
+    await this.prisma.$transaction([
+      this.prisma.payment.update({
+        where: { id: payment.id },
+        data: {
+          status: PaymentStatus.FAILED,
+          metadata: this.mergeMetadata(payment.metadata, {
+            paymentMethod: 'card',
+            stripe: {
+              paymentIntentId: paymentIntent.id,
+              status: paymentIntent.status,
+              eventId: event.id,
+              failedAt: new Date().toISOString(),
+              lastError:
+                paymentIntent.last_payment_error?.message ??
+                'Card payment failed',
+            },
+          }),
+        },
+      }),
+      this.prisma.webhookEvent.create({
+        data: {
+          merchantId: payment.merchantId,
+          paymentId: payment.id,
+          eventType: 'payment.failed',
+          payload: {
+            paymentId: payment.id,
+            merchantId: payment.merchantId,
+            provider: 'stripe',
+            stripePaymentIntentId: paymentIntent.id,
+            reason:
+              paymentIntent.last_payment_error?.message ??
+              'Card payment failed',
+          } as Prisma.InputJsonValue,
+        },
+      }),
+    ]);
+  }
+
+  private getCardCurrency(asset: string): string {
+    const normalized = asset.trim().toLowerCase();
+    return normalized === 'usdc' ? 'usd' : normalized;
+  }
+
+  private toMinorUnits(amount: unknown): number {
+    const numericAmount = this.toNumber(amount);
+    if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
+      throw new BadRequestException('Payment amount must be greater than zero.');
+    }
+
+    return Math.max(1, Math.round(numericAmount * 100));
+  }
+
+  private toNumber(value: unknown): number {
+    const numeric = typeof value === 'number' ? value : Number(String(value));
+    if (!Number.isFinite(numeric)) {
+      throw new BadRequestException('Payment amount is invalid.');
+    }
+    return numeric;
+  }
+
+  private asRecord(value: unknown): Record<string, unknown> {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+      return {};
+    }
+
+    return value as Record<string, unknown>;
+  }
+
+  private readString(value: unknown): string | null {
+    return typeof value === 'string' && value.length > 0 ? value : null;
+  }
+
+  private readLineItems(value: unknown): CheckoutLineItem[] {
+    if (!Array.isArray(value)) {
+      return [];
+    }
+
+    return value.flatMap((entry) => {
+      if (!entry || typeof entry !== 'object') {
+        return [];
+      }
+
+      const record = entry as Record<string, unknown>;
+      const label = this.readString(record.label);
+      const amount = Number(record.amount);
+
+      if (!label || !Number.isFinite(amount)) {
+        return [];
+      }
+
+      return [{ label, amount }];
+    });
+  }
+
+  private mergeMetadata(
+    current: unknown,
+    patch: Record<string, unknown>,
+  ): Prisma.InputJsonValue {
+    return {
+      ...this.asRecord(current),
+      ...patch,
+    } as Prisma.InputJsonValue;
   }
 
   async getByMerchant(merchantId: string, filters: PaymentFiltersDto) {
