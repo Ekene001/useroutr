@@ -1,6 +1,13 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { api } from "@/lib/api";
 import {
@@ -46,7 +53,7 @@ interface AuthState {
 
 const AuthContext = createContext<AuthState | undefined>(undefined);
 
-const PUBLIC_PATHS = ["/login", "/register", "/verify"];
+const PUBLIC_PATHS = ["/login", "/register", "/verify", "/payments"];
 const AUTH_ENTRY_PATHS = ["/login", "/register"];
 
 // ── Provider ──────────────────────────────────────────────────────────────────
@@ -54,7 +61,9 @@ const AUTH_ENTRY_PATHS = ["/login", "/register"];
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [merchant, setMerchant] = useState<Merchant | null>(null);
   const [token, setToken] = useState<string | null>(null);
-  const [verificationEmail, setVerificationEmail] = useState<string | null>(null);
+  const [verificationEmail, setVerificationEmail] = useState<string | null>(
+    null,
+  );
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
@@ -112,7 +121,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         logout();
       }, delay);
     },
-    [clearRefreshTimer, logout]
+    [clearRefreshTimer, logout],
   );
 
   // ── Load existing session on mount ─────────────────────────────────────────
@@ -126,8 +135,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (!storedToken) return;
 
         // If expired, try refresh
-        const activeToken =
-          isTokenExpired(storedToken) ? await refreshAccessToken() : storedToken;
+        const activeToken = isTokenExpired(storedToken)
+          ? await refreshAccessToken()
+          : storedToken;
 
         if (!activeToken) return;
 
@@ -198,7 +208,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setPendingVerificationEmail(data.merchant.email ?? dto.email);
     setVerificationEmail(data.merchant.email ?? dto.email);
     scheduleRefresh(data.accessToken);
-    router.replace(`/verify?email=${encodeURIComponent(data.merchant.email ?? dto.email)}`);
+    router.replace(
+      `/verify?email=${encodeURIComponent(data.merchant.email ?? dto.email)}`,
+    );
   };
 
   const refreshToken = async () => {
