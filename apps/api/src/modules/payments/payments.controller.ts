@@ -16,6 +16,7 @@ import { PaymentsService } from './payments.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { PaymentFiltersDto } from './dto/payment-filters.dto';
 import { PaymentResponseDto } from './dto/payment-response.dto';
+import { BankWebhookDto } from './dto/bank-webhook.dto';
 import { ApiKeyGuard } from '../../common/guards/api-key.guard';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CombinedAuthGuard } from '../../common/guards/combined-auth.guard';
@@ -80,6 +81,30 @@ export class PaymentsController {
   @Post('payments/:id/card-session')
   createCardSession(@Param('id') paymentId: string) {
     return this.paymentsService.createCardSession(paymentId);
+  }
+
+  @Post('payments/:id/bank-session')
+  async getOrCreateBankSession(@Param('id') id: string) {
+    return this.paymentsService.getOrCreateBankSession(id);
+  }
+
+  @Post('payments/:id/bank-session/regenerate')
+  async regenerateBankSession(@Param('id') id: string) {
+    return this.paymentsService.regenerateBankSession(id);
+  }
+
+  @Post('payments/:id/bank-sent')
+  async markBankSent(@Param('id') id: string) {
+    return this.paymentsService.markBankTransferSent(id);
+  }
+
+  @Post('payments/bank-webhook')
+  async bankWebhook(
+    @Body() body: BankWebhookDto,
+    @Headers('x-bank-webhook-secret') secret?: string,
+  ) {
+    this.paymentsService.verifyBankWebhookSecret(secret);
+    return this.paymentsService.handleBankTransferNotice(body);
   }
 }
 
