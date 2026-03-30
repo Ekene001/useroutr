@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import * as StellarSdk from '@stellar/stellar-sdk';
 
 @Injectable()
 export class StellarService {
@@ -7,7 +8,7 @@ export class StellarService {
   // We'll use a real stream in the full implementation
   streamContractEvents(contractId: string, onEvent: (event: any) => void) {
     this.logger.log(`Starting soroban event stream for ${contractId}`);
-    // This would typically use the @stellar/stellar-sdk rpc module
+    // This would typically use StellarSdk.rpc.Server.getEvents
   }
 
   async lockHTLC(params: {
@@ -33,5 +34,10 @@ export class StellarService {
     this.logger.log(`Refunding HTLC on Stellar with lockId: ${lockId}`);
     // Placeholder for Soroban invocation
     return 'stellar_refund_tx_hash';
+  }
+
+  async executePathPayment(params: any): Promise<string> {
+    this.logger.log(`Executing Stellar path payment`);
+    return 'stellar_path_payment_tx_hash';
   }
 }
