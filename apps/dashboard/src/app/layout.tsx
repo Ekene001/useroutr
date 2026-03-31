@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Inter, Open_Sans } from "next/font/google";
 import { ThemeProvider } from "@/providers/ThemeProvider";
 import { QueryProvider } from "@/providers/QueryProvider";
@@ -36,9 +37,11 @@ export default function RootLayout({
       <body className={`${inter.variable} ${openSans.variable} antialiased`}>
         <ThemeProvider>
           <QueryProvider>
-            <AuthProvider>
-              <ToastProvider>{children}</ToastProvider>
-            </AuthProvider>
+            <Suspense>
+              <AuthProvider>
+                <ToastProvider>{children}</ToastProvider>
+              </AuthProvider>
+            </Suspense>
           </QueryProvider>
         </ThemeProvider>
       </body>
