@@ -1,18 +1,15 @@
-"use client"
+"use client";
 
-import Link from "next/link"
+import Link from "next/link";
 import {
   BadgeCheck,
   Bell,
   ChevronsUpDown,
   LogOut,
   Settings,
-} from "lucide-react"
+} from "lucide-react";
 
-import {
-  Avatar,
-  AvatarFallback,
-} from "@/components/ui/avatar"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,27 +18,27 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
 import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
-} from "@/components/ui/sidebar"
-import { useAuth } from "@/providers/AuthProvider"
+} from "@tavvio/ui";
+import { useAuth } from "@/providers/AuthProvider";
 
 export function NavUser() {
-  const { isMobile } = useSidebar()
-  const { merchant, logout } = useAuth()
+  const { isMobile } = useSidebar();
+  const { merchant, logout } = useAuth();
 
-  const name = merchant?.name ?? "Merchant"
-  const email = merchant?.email ?? ""
+  const name = merchant?.name ?? "Merchant";
+  const email = merchant?.email ?? "";
   const initials = name
     .split(" ")
     .map((n) => n[0])
     .join("")
     .toUpperCase()
-    .slice(0, 2)
+    .slice(0, 2);
 
   return (
     <SidebarMenu>
@@ -113,5 +110,5 @@ export function NavUser() {
         </DropdownMenu>
       </SidebarMenuItem>
     </SidebarMenu>
-  )
+  );
 }

@@ -3,13 +3,20 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import {
+  Settings,
+  KeyRound,
+  Webhook,
+  Users,
+  Paintbrush,
+} from "lucide-react";
 
 const tabs = [
-  { name: "General", href: "/settings" },
-  { name: "API Keys", href: "/settings/api-keys" },
-  { name: "Webhooks", href: "/settings/webhooks" },
-  { name: "Team", href: "/settings/team" },
-  { name: "Branding", href: "/settings/branding" },
+  { name: "General", href: "/settings", icon: Settings },
+  { name: "API Keys", href: "/settings/api-keys", icon: KeyRound },
+  { name: "Webhooks", href: "/settings/webhooks", icon: Webhook },
+  { name: "Team", href: "/settings/team", icon: Users },
+  { name: "Branding", href: "/settings/branding", icon: Paintbrush },
 ];
 
 export default function SettingsLayout({
@@ -20,46 +27,57 @@ export default function SettingsLayout({
   const pathname = usePathname();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
+      {/* Header */}
       <div>
-        <h2 className="font-display text-xl font-semibold text-foreground">
+        <h1 className="font-display text-2xl font-bold tracking-tight text-foreground">
           Settings
-        </h2>
+        </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Manage your account settings and preferences
+          Manage your account, integrations, and preferences
         </p>
       </div>
 
-      {/* Tab navigation */}
-      <div className="border-b border-border">
-        <nav className="-mb-px flex space-x-8" aria-label="Settings tabs">
-          {tabs.map((tab) => {
-            const isActive =
-              tab.href === "/settings"
-                ? pathname === "/settings"
-                : pathname.startsWith(tab.href);
+      <div className="flex flex-col gap-8 lg:flex-row">
+        {/* Sidebar navigation */}
+        <nav className="w-full shrink-0 lg:w-56">
+          <ul className="flex gap-1 overflow-x-auto pb-2 lg:flex-col lg:overflow-visible lg:pb-0">
+            {tabs.map((tab) => {
+              const isActive =
+                tab.href === "/settings"
+                  ? pathname === "/settings"
+                  : pathname.startsWith(tab.href);
 
-            return (
-              <Link
-                key={tab.name}
-                href={tab.href}
-                className={cn(
-                  "whitespace-nowrap border-b-2 px-1 py-4 text-sm font-medium transition-colors",
-                  isActive
-                    ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:border-border hover:text-foreground",
-                )}
-                aria-current={isActive ? "page" : undefined}
-              >
-                {tab.name}
-              </Link>
-            );
-          })}
+              const Icon = tab.icon;
+
+              return (
+                <li key={tab.name}>
+                  <Link
+                    href={tab.href}
+                    className={cn(
+                      "flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium transition-all duration-200",
+                      isActive
+                        ? "bg-primary/10 text-primary shadow-sm"
+                        : "text-muted-foreground hover:bg-secondary hover:text-foreground",
+                    )}
+                    aria-current={isActive ? "page" : undefined}
+                  >
+                    <Icon
+                      size={18}
+                      strokeWidth={isActive ? 2.5 : 1.75}
+                      className="shrink-0"
+                    />
+                    <span className="whitespace-nowrap">{tab.name}</span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
         </nav>
-      </div>
 
-      {/* Tab content */}
-      <div>{children}</div>
+        {/* Content area */}
+        <div className="min-w-0 flex-1">{children}</div>
+      </div>
     </div>
   );
 }

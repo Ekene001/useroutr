@@ -59,6 +59,7 @@
   --radius-md: var(--radius-md);
   --radius-lg: var(--radius-lg);
   --radius-xl: var(--radius-xl);
+  --radius-2xl: var(--radius-2xl);
 
   /* ── Sidebar ── */
   --color-sidebar-ring: var(--sidebar-ring);
@@ -109,4 +110,72 @@
   --sidebar-accent-foreground: oklch(0.15 0.01 265);
   --sidebar-border: oklch(0.88 0.008 265);
   --sidebar-ring: var(--blue2);
+}
+
+.dark {
+  --sidebar: hsl(240 5.9% 10%);
+  --sidebar-foreground: hsl(240 4.8% 95.9%);
+  --sidebar-primary: hsl(224.3 76.3% 48%);
+  --sidebar-primary-foreground: hsl(0 0% 100%);
+  --sidebar-accent: hsl(240 3.7% 15.9%);
+  --sidebar-accent-foreground: hsl(240 4.8% 95.9%);
+  --sidebar-border: hsl(240 3.7% 15.9%);
+  --sidebar-ring: hsl(217.2 91.2% 59.8%);
+}
+
+/* ── Modern card surface ── */
+.surface {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.surface:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--rule2);
+}
+
+/* ── Glow accent for primary elements ── */
+.glow-primary {
+  box-shadow: 0 0 20px oklch(0.55 0.18 255 / 15%), var(--shadow-sm);
+}
+
+.glow-primary:hover {
+  box-shadow: 0 0 32px oklch(0.55 0.18 255 / 25%), var(--shadow-md);
+}
+
+.light .glow-primary {
+  box-shadow: 0 0 24px oklch(0.55 0.18 255 / 10%), var(--shadow-sm);
+}
+
+.light .glow-primary:hover {
+  box-shadow: 0 0 36px oklch(0.55 0.18 255 / 18%), var(--shadow-md);
+}
+
+/* ── Gradient border accent ── */
+.gradient-border {
+  position: relative;
+  border: none;
+  background: var(--card);
+  border-radius: var(--radius-xl);
+}
+
+.gradient-border::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, var(--blue) 0%, var(--teal) 50%, var(--purple) 100%);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+  opacity: 0.4;
+  transition: opacity 0.3s ease;
+}
+
+.gradient-border:hover::before {
+  opacity: 0.7;
 }

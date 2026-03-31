@@ -87,15 +87,17 @@ async function request<T>(
 
   let res: Response;
 
+  const isFormData = typeof FormData !== "undefined" && options.body instanceof FormData;
+
   try {
     res = await fetch(url.toString(), {
       method,
       headers: {
-        "Content-Type": "application/json",
+        ...(isFormData ? {} : { "Content-Type": "application/json" }),
         ...(token && { Authorization: `Bearer ${token}` }),
         ...options.headers,
       },
-      body: options.body ? JSON.stringify(options.body) : undefined,
+      body: isFormData ? (options.body as FormData) : options.body ? JSON.stringify(options.body) : undefined,
     });
   } catch {
     throw new Error(getApiConnectionErrorMessage());
@@ -118,11 +120,11 @@ async function request<T>(
         retryRes = await fetch(url.toString(), {
           method,
           headers: {
-            "Content-Type": "application/json",
+            ...(isFormData ? {} : { "Content-Type": "application/json" }),
             Authorization: `Bearer ${newToken}`,
             ...options.headers,
           },
-          body: options.body ? JSON.stringify(options.body) : undefined,
+          body: isFormData ? (options.body as FormData) : options.body ? JSON.stringify(options.body) : undefined,
         });
       } catch {
         throw new Error(getApiConnectionErrorMessage());

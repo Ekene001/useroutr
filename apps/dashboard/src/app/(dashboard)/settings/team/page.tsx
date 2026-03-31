@@ -1,332 +1,403 @@
 "use client";
 
 import { useState } from "react";
-import { Button, Input, Modal, Select, useToast } from "@tavvio/ui";
-import { api } from "@/lib/api";
-import { Trash, UserPlus } from "@phosphor-icons/react";
-
-interface TeamMember {
-  id: string;
-  name: string;
-  email: string;
-  role: "owner" | "admin" | "developer" | "finance" | "viewer";
-  isCurrentUser?: boolean;
-}
+import {
+  Button,
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  Input,
+  Select,
+  Skeleton,
+  useToast,
+} from "@tavvio/ui";
+import {
+  useTeamMembers,
+  useInviteTeamMember,
+  useUpdateTeamMemberRole,
+  useRemoveTeamMember,
+  type TeamMember,
+} from "@/hooks/useSettings";
+import { useAuth } from "@/hooks/useAuth";
+import { motion } from "framer-motion";
+import {
+  Users,
+  UserPlus,
+  Trash2,
+  Crown,
+  Shield,
+  Code,
+  Receipt,
+  Eye,
+} from "lucide-react";
 
 const ROLES = [
-  { value: "owner", label: "Owner" },
-  { value: "admin", label: "Admin" },
-  { value: "developer", label: "Developer" },
-  { value: "finance", label: "Finance" },
-  { value: "viewer", label: "Viewer" },
+  { value: "ADMIN", label: "Admin" },
+  { value: "DEVELOPER", label: "Developer" },
+  { value: "FINANCE", label: "Finance" },
+  { value: "VIEWER", label: "Viewer" },
 ];
+
+const ROLE_CONFIG: Record<
+  string,
+  { color: string; bg: string; border: string; icon: typeof Crown }
+> = {
+  OWNER: {
+    color: "text-purple",
+    bg: "bg-purple/10",
+    border: "border-purple/20",
+    icon: Crown,
+  },
+  ADMIN: {
+    color: "text-blue",
+    bg: "bg-blue/10",
+    border: "border-blue/20",
+    icon: Shield,
+  },
+  DEVELOPER: {
+    color: "text-green",
+    bg: "bg-green/10",
+    border: "border-green/20",
+    icon: Code,
+  },
+  FINANCE: {
+    color: "text-amber",
+    bg: "bg-amber/10",
+    border: "border-amber/20",
+    icon: Receipt,
+  },
+  VIEWER: {
+    color: "text-muted-foreground",
+    bg: "bg-secondary",
+    border: "border-border",
+    icon: Eye,
+  },
+};
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 12 },
+  visible: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: { delay: i * 0.08, duration: 0.35, ease: "easeOut" },
+  }),
+};
 
 export default function TeamPage() {
   const { toast } = useToast();
-  const [members, setMembers] = useState<TeamMember[]>([
-    {
-      id: "1",
-      name: "You",
-      email: "me@co.com",
-      role: "owner",
-      isCurrentUser: true,
-    },
-    { id: "2", name: "Jane Doe", email: "j@co.com", role: "admin" },
-    { id: "3", name: "Dev Smith", email: "d@co.com", role: "developer" },
-  ]);
+  const { merchant } = useAuth();
+  const { data: members, isLoading: isLoadingMembers } = useTeamMembers();
+  const inviteMember = useInviteTeamMember();
+  const updateRole = useUpdateTeamMemberRole();
+  const removeMember = useRemoveTeamMember();
 
-  const [showInviteModal, setShowInviteModal] = useState(false);
-  const [showRemoveModal, setShowRemoveModal] = useState(false);
-  const [showRoleModal, setShowRoleModal] = useState(false);
-  const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
+  const [showInviteDialog, setShowInviteDialog] = useState(false);
+  const [showRemoveDialog, setShowRemoveDialog] = useState(false);
+  const [showRoleDialog, setShowRoleDialog] = useState(false);
+  const [selectedMember, setSelectedMember] = useState<TeamMember | null>(
+    null,
+  );
   const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteRole, setInviteRole] = useState<string>("developer");
-  const [newRole, setNewRole] = useState<string>("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [inviteRole, setInviteRole] = useState("DEVELOPER");
+  const [newRole, setNewRole] = useState("");
 
-  const handleInvite = async () => {
+  const handleInvite = () => {
     if (!inviteEmail.trim()) {
       toast("Please enter an email address.", "error");
       return;
     }
 
-    setIsLoading(true);
-    try {
-      await api.post("/team/invite", {
-        email: inviteEmail,
-        role: inviteRole,
-      });
-      toast("Invitation sent successfully.", "success");
-      setShowInviteModal(false);
-      setInviteEmail("");
-      setInviteRole("developer");
-    } catch {
-      toast("Failed to send invitation.", "error");
-    } finally {
-      setIsLoading(false);
-    }
+    inviteMember.mutate(
+      { email: inviteEmail, role: inviteRole },
+      {
+        onSuccess: () => {
+          toast("Invitation sent successfully.", "success");
+          setShowInviteDialog(false);
+          setInviteEmail("");
+          setInviteRole("DEVELOPER");
+        },
+        onError: (err) =>
+          toast(err.message || "Failed to send invitation.", "error"),
+      },
+    );
   };
 
-  const handleChangeRole = async () => {
+  const handleChangeRole = () => {
     if (!selectedMember || !newRole) return;
 
-    setIsLoading(true);
-    try {
-      await api.patch(`/team/members/${selectedMember.id}`, {
-        role: newRole,
-      });
-      setMembers((prev) =>
-        prev.map((m) =>
-          m.id === selectedMember.id
-            ? { ...m, role: newRole as TeamMember["role"] }
-            : m,
-        ),
-      );
-      toast("Role updated successfully.", "success");
-      setShowRoleModal(false);
-      setSelectedMember(null);
-      setNewRole("");
-    } catch {
-      toast("Failed to update role.", "error");
-    } finally {
-      setIsLoading(false);
-    }
+    updateRole.mutate(
+      { id: selectedMember.id, role: newRole },
+      {
+        onSuccess: () => {
+          toast("Role updated successfully.", "success");
+          setShowRoleDialog(false);
+          setSelectedMember(null);
+          setNewRole("");
+        },
+        onError: (err) =>
+          toast(err.message || "Failed to update role.", "error"),
+      },
+    );
   };
 
-  const handleRemoveMember = async () => {
+  const handleRemoveMember = () => {
     if (!selectedMember) return;
 
-    setIsLoading(true);
-    try {
-      await api.delete(`/team/members/${selectedMember.id}`);
-      setMembers((prev) => prev.filter((m) => m.id !== selectedMember.id));
-      toast("Member removed successfully.", "success");
-      setShowRemoveModal(false);
-      setSelectedMember(null);
-    } catch {
-      toast("Failed to remove member.", "error");
-    } finally {
-      setIsLoading(false);
-    }
+    removeMember.mutate(selectedMember.id, {
+      onSuccess: () => {
+        toast("Member removed successfully.", "success");
+        setShowRemoveDialog(false);
+        setSelectedMember(null);
+      },
+      onError: (err) =>
+        toast(err.message || "Failed to remove member.", "error"),
+    });
   };
 
-  const getRoleBadgeColor = (role: string) => {
-    switch (role) {
-      case "owner":
-        return "bg-purple-500/10 text-purple-500 border-purple-500/30";
-      case "admin":
-        return "bg-blue-500/10 text-blue-500 border-blue-500/30";
-      case "developer":
-        return "bg-green-500/10 text-green-500 border-green-500/30";
-      case "finance":
-        return "bg-orange-500/10 text-orange-500 border-orange-500/30";
-      case "viewer":
-        return "bg-gray-500/10 text-gray-500 border-gray-500/30";
-      default:
-        return "bg-gray-500/10 text-gray-500 border-gray-500/30";
-    }
-  };
+  if (isLoadingMembers) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-10 w-48" />
+          <Skeleton className="h-10 w-36" />
+        </div>
+        <div className="space-y-3">
+          {[1, 2, 3].map((i) => (
+            <Skeleton key={i} className="h-20 w-full rounded-2xl" />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="font-display text-xl font-semibold text-foreground">
-            Team Members
-          </h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Manage team members and their roles
-          </p>
+      {/* Header */}
+      <motion.div
+        className="flex items-center justify-between"
+        variants={fadeUp}
+        initial="hidden"
+        animate="visible"
+        custom={0}
+      >
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue/10">
+            <Users size={20} className="text-blue" />
+          </div>
+          <div>
+            <h2 className="font-display text-lg font-bold tracking-tight text-foreground">
+              Team Members
+            </h2>
+            <p className="text-xs text-muted-foreground">
+              {members?.length ?? 0} member{(members?.length ?? 0) !== 1 && "s"}
+            </p>
+          </div>
         </div>
-        <Button onClick={() => setShowInviteModal(true)}>
-          <UserPlus size={16} />
-          Invite Member
+        <Button onClick={() => setShowInviteDialog(true)}>
+          <UserPlus size={15} />
+          Invite
         </Button>
-      </div>
+      </motion.div>
 
-      {/* Team members table */}
-      <div className="rounded-lg border border-border bg-card shadow-sm overflow-hidden">
-        <table className="w-full">
-          <thead>
-            <tr className="border-b border-border bg-secondary/50">
-              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground">
-                Name
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground">
-                Email
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground">
-                Role
-              </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {members.map((member) => (
-              <tr
+      {/* Members list */}
+      <div className="space-y-2">
+        {members && members.length > 0 ? (
+          members.map((member, idx) => {
+            const isCurrentUser = member.email === merchant?.email;
+            const isOwner = member.role === "OWNER";
+            const config = ROLE_CONFIG[member.role] ?? ROLE_CONFIG.VIEWER;
+            const RoleIcon = config.icon;
+
+            return (
+              <motion.div
                 key={member.id}
-                className="hover:bg-secondary/30 transition-colors"
+                className="surface flex items-center justify-between p-4"
+                variants={fadeUp}
+                initial="hidden"
+                animate="visible"
+                custom={idx + 1}
               >
-                <td className="px-6 py-4">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium text-foreground">
-                      {member.name}
-                    </span>
-                    {member.isCurrentUser && (
-                      <span className="text-xs text-muted-foreground">
-                        (You)
-                      </span>
-                    )}
-                  </div>
-                </td>
-                <td className="px-6 py-4 text-sm text-muted-foreground">
-                  {member.email}
-                </td>
-                <td className="px-6 py-4">
-                  <span
-                    className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${getRoleBadgeColor(
-                      member.role,
-                    )}`}
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${config.bg}`}
                   >
-                    {member.role.charAt(0).toUpperCase() + member.role.slice(1)}
-                  </span>
-                </td>
-                <td className="px-6 py-4 text-right">
-                  {!member.isCurrentUser && (
-                    <div className="flex items-center justify-end gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedMember(member);
-                          setNewRole(member.role);
-                          setShowRoleModal(true);
-                        }}
-                      >
-                        Change Role
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-destructive hover:text-destructive"
-                        onClick={() => {
-                          setSelectedMember(member);
-                          setShowRemoveModal(true);
-                        }}
-                      >
-                        <Trash size={16} />
-                        Remove
-                      </Button>
+                    <RoleIcon size={16} className={config.color} />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-foreground">
+                        {member.email}
+                      </span>
+                      {isCurrentUser && (
+                        <span className="rounded-md bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
+                          You
+                        </span>
+                      )}
                     </div>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                    <span
+                      className={`mt-0.5 inline-flex items-center gap-1 text-xs font-medium ${config.color}`}
+                    >
+                      {member.role.charAt(0) +
+                        member.role.slice(1).toLowerCase()}
+                    </span>
+                  </div>
+                </div>
+
+                {!isCurrentUser && !isOwner && (
+                  <div className="flex items-center gap-1.5">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedMember(member);
+                        setNewRole(member.role);
+                        setShowRoleDialog(true);
+                      }}
+                    >
+                      Change Role
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-destructive hover:text-destructive"
+                      onClick={() => {
+                        setSelectedMember(member);
+                        setShowRemoveDialog(true);
+                      }}
+                    >
+                      <Trash2 size={14} />
+                    </Button>
+                  </div>
+                )}
+              </motion.div>
+            );
+          })
+        ) : (
+          <motion.div
+            className="surface p-10 text-center"
+            variants={fadeUp}
+            initial="hidden"
+            animate="visible"
+            custom={1}
+          >
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-secondary">
+              <Users size={20} className="text-muted-foreground" />
+            </div>
+            <p className="text-sm font-medium text-foreground">
+              No team members yet
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Invite someone to get started
+            </p>
+          </motion.div>
+        )}
       </div>
 
-      {/* Invite Modal */}
-      <Modal
-        open={showInviteModal}
-        onOpenChange={setShowInviteModal}
-        title="Invite Team Member"
-        description="Send an invitation to join your team"
-        footer={
-          <div className="flex justify-end gap-3">
-            <Button variant="outline" onClick={() => setShowInviteModal(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleInvite} loading={isLoading}>
+      {/* Invite Dialog */}
+      <Dialog open={showInviteDialog} onOpenChange={setShowInviteDialog}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Invite Team Member</DialogTitle>
+            <DialogDescription>
+              Send an invitation to join your team
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Input
+              label="Email address"
+              type="email"
+              placeholder="colleague@company.com"
+              value={inviteEmail}
+              onChange={(e) => setInviteEmail(e.target.value)}
+            />
+            <div className="space-y-1.5">
+              <label className="block text-sm font-medium text-foreground">
+                Role
+              </label>
+              <Select
+                value={inviteRole}
+                onValueChange={setInviteRole}
+                options={ROLES}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">Cancel</Button>
+            </DialogClose>
+            <Button onClick={handleInvite} loading={inviteMember.isPending}>
               Send Invitation
             </Button>
-          </div>
-        }
-      >
-        <div className="space-y-4">
-          <Input
-            label="Email address"
-            type="email"
-            placeholder="colleague@company.com"
-            value={inviteEmail}
-            onChange={(e) => setInviteEmail(e.target.value)}
-          />
-          <div className="space-y-1.5">
-            <label className="block text-sm font-medium text-foreground">
-              Role
-            </label>
-            <Select
-              value={inviteRole}
-              onValueChange={setInviteRole}
-              options={ROLES.filter((r) => r.value !== "owner")}
-            />
-          </div>
-        </div>
-      </Modal>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-      {/* Change Role Modal */}
-      <Modal
-        open={showRoleModal}
-        onOpenChange={setShowRoleModal}
-        title="Change Role"
-        description={`Update role for ${selectedMember?.name}`}
-        footer={
-          <div className="flex justify-end gap-3">
-            <Button variant="outline" onClick={() => setShowRoleModal(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleChangeRole} loading={isLoading}>
+      {/* Change Role Dialog */}
+      <Dialog open={showRoleDialog} onOpenChange={setShowRoleDialog}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Change Role</DialogTitle>
+            <DialogDescription>
+              Update role for {selectedMember?.email}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <label className="block text-sm font-medium text-foreground">
+                Role
+              </label>
+              <Select
+                value={newRole}
+                onValueChange={setNewRole}
+                options={ROLES}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Changing a member&apos;s role will immediately update their
+              permissions.
+            </p>
+          </div>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">Cancel</Button>
+            </DialogClose>
+            <Button onClick={handleChangeRole} loading={updateRole.isPending}>
               Save Role
             </Button>
-          </div>
-        }
-      >
-        <div className="space-y-4">
-          <div className="space-y-1.5">
-            <label className="block text-sm font-medium text-foreground">
-              Role
-            </label>
-            <Select
-              value={newRole}
-              onValueChange={setNewRole}
-              options={ROLES.filter((r) => r.value !== "owner")}
-            />
-          </div>
-          <p className="text-sm text-muted-foreground">
-            Changing a member's role will immediately update their permissions.
-          </p>
-        </div>
-      </Modal>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-      {/* Remove Member Modal */}
-      <Modal
-        open={showRemoveModal}
-        onOpenChange={setShowRemoveModal}
-        title="Remove Team Member"
-        description="This action cannot be undone"
-        footer={
-          <div className="flex justify-end gap-3">
-            <Button variant="outline" onClick={() => setShowRemoveModal(false)}>
-              Cancel
-            </Button>
+      {/* Remove Member Dialog */}
+      <Dialog open={showRemoveDialog} onOpenChange={setShowRemoveDialog}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Remove Team Member</DialogTitle>
+            <DialogDescription>This action cannot be undone</DialogDescription>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Are you sure you want to remove{" "}
+            <strong>{selectedMember?.email}</strong> from your team? They will
+            lose access immediately.
+          </p>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">Cancel</Button>
+            </DialogClose>
             <Button
               variant="destructive"
               onClick={handleRemoveMember}
-              loading={isLoading}
+              loading={removeMember.isPending}
             >
               Remove Member
             </Button>
-          </div>
-        }
-      >
-        <p className="text-sm text-muted-foreground">
-          Are you sure you want to remove{" "}
-          <strong>{selectedMember?.name}</strong> from your team? They will lose
-          access to all dashboard features immediately.
-        </p>
-      </Modal>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

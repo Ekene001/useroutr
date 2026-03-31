@@ -2,7 +2,7 @@
 
 import { AppSidebar } from "@/components/app-sidebar";
 import { SiteHeader } from "@/components/site-header";
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import { SidebarInset, SidebarProvider, SidebarRail } from "@tavvio/ui";
 import { useAuth } from "@/providers/AuthProvider";
 
 export default function DashboardLayout({
@@ -33,14 +33,16 @@ export default function DashboardLayout({
   }
 
   return (
-    <SidebarProvider className="flex flex-col">
-      <SiteHeader />
-      <div className="flex flex-1">
-        <AppSidebar />
-        <SidebarInset>
-          {/* <div className="flex-1 p-6">{children}</div> */}
-        </SidebarInset>
-      </div>
-    </SidebarProvider>
+    <div className="[--header-height:calc(--spacing(14))]">
+      <SidebarProvider className="flex flex-col">
+        <SiteHeader />
+        <div className="flex flex-1">
+          <AppSidebar variant="sidebar" collapsible="none" />
+          <SidebarInset>
+            <div className="flex-1 p-6">{children}</div>
+          </SidebarInset>
+        </div>
+      </SidebarProvider>
+    </div>
   );
 }

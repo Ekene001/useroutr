@@ -1,17 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-
-interface Merchant {
-  id: string;
-  name: string;
-  email: string;
-  logo?: string;
-  settings: Record<string, unknown>;
-}
+import type { MerchantProfile } from "./useSettings";
 
 export function useMerchant() {
-  return useQuery<Merchant>({
-    queryKey: ["merchant"],
-    queryFn: () => api.get("/merchant/me"),
+  return useQuery<MerchantProfile>({
+    queryKey: ["merchant-profile"],
+    queryFn: () => api.get("/merchants/me"),
   });
 }

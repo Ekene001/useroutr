@@ -235,3 +235,4 @@ export {
   FieldContent,
   FieldTitle,
 } from "./components/ui/field";
+export * from "./components/ui/sidebar";

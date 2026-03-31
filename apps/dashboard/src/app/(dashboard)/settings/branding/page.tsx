@@ -1,222 +1,293 @@
 "use client";
 
-import { useState, useRef } from "react";
-import { Button, Input, useToast } from "@tavvio/ui";
-import { api } from "@/lib/api";
-import { Upload, Image as ImageIcon, Trash } from "@phosphor-icons/react";
+import { useEffect, useState } from "react";
+import { Button, Input, Skeleton, useToast } from "@tavvio/ui";
+import { useMerchantProfile, useUpdateBranding } from "@/hooks/useSettings";
+import { motion } from "framer-motion";
+import {
+  ImageIcon,
+  Trash2,
+  Palette,
+  Eye,
+  CreditCard,
+  Landmark,
+  Bitcoin,
+} from "lucide-react";
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 12 },
+  visible: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: { delay: i * 0.08, duration: 0.35, ease: "easeOut" },
+  }),
+};
 
 export default function BrandingPage() {
   const { toast } = useToast();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [logo, setLogo] = useState<string | null>(null);
-  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const { data: merchant, isLoading: isLoadingProfile } =
+    useMerchantProfile();
+  const updateBranding = useUpdateBranding();
+
+  const [logoUrl, setLogoUrl] = useState("");
   const [brandColor, setBrandColor] = useState("#007BFF");
-  const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith("image/")) {
-      toast("Please upload an image file.", "error");
-      return;
+  useEffect(() => {
+    if (merchant) {
+      setLogoUrl(merchant.logoUrl ?? "");
+      setBrandColor(merchant.brandColor ?? "#007BFF");
     }
+  }, [merchant]);
 
-    if (file.size > 5 * 1024 * 1024) {
-      toast("Image must be less than 5MB.", "error");
-      return;
-    }
+  const hasChanges =
+    merchant &&
+    (logoUrl !== (merchant.logoUrl ?? "") ||
+      brandColor !== (merchant.brandColor ?? "#007BFF"));
 
-    setLogoFile(file);
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setLogo(reader.result as string);
-    };
-    reader.readAsDataURL(file);
+  const handleSave = () => {
+    updateBranding.mutate(
+      { logoUrl: logoUrl || undefined, brandColor },
+      {
+        onSuccess: () => toast("Branding settings saved.", "success"),
+        onError: (err) =>
+          toast(
+            err.message || "Failed to save branding settings.",
+            "error",
+          ),
+      },
+    );
   };
 
-  const handleRemoveLogo = () => {
-    setLogo(null);
-    setLogoFile(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
-  };
+  if (isLoadingProfile) {
+    return (
+      <div className="space-y-6">
+        <div className="surface p-6 space-y-4">
+          <Skeleton className="h-5 w-16" />
+          <Skeleton className="h-10 w-full" />
+        </div>
+        <div className="surface p-6 space-y-4">
+          <Skeleton className="h-5 w-28" />
+          <Skeleton className="h-10 w-48" />
+        </div>
+        <div className="surface p-6 space-y-4">
+          <Skeleton className="h-5 w-20" />
+          <Skeleton className="h-64 w-full" />
+        </div>
+      </div>
+    );
+  }
 
-  const handleSave = async () => {
-    setIsLoading(true);
-    try {
-      const formData = new FormData();
-      if (logoFile) {
-        formData.append("logo", logoFile);
-      }
-      formData.append("brandColor", brandColor);
-
-      await api.patch("/merchant/branding", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
-
-      toast("Branding settings saved.", "success");
-    } catch {
-      toast("Failed to save branding settings.", "error");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const paymentMethods = [
+    { label: "Card", icon: CreditCard },
+    { label: "Bank Transfer", icon: Landmark },
+    { label: "Crypto", icon: Bitcoin },
+  ];
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="font-display text-xl font-semibold text-foreground">
-          Branding
-        </h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Customize the look of your payment pages and invoices
-        </p>
-      </div>
-
-      <div className="max-w-2xl space-y-6">
-        {/* Logo */}
-        <div className="rounded-lg border border-border bg-card p-6 shadow-sm">
-          <h3 className="font-medium text-foreground">Logo</h3>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Shown on hosted checkout and payment links
-          </p>
-          <div className="mt-4">
-            {logo ? (
-              <div className="relative inline-block">
-                <img
-                  src={logo}
-                  alt="Brand logo"
-                  className="h-32 rounded-lg border border-border object-contain"
-                />
-                <button
-                  onClick={handleRemoveLogo}
-                  className="absolute -right-2 -top-2 rounded-full bg-destructive p-1.5 text-destructive-foreground shadow-sm hover:brightness-110 transition-colors"
-                >
-                  <Trash size={14} />
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="flex h-32 w-64 flex-col items-center justify-center rounded-lg border-2 border-dashed border-border hover:border-primary hover:bg-secondary/50 transition-colors"
-              >
-                <Upload size={24} className="text-muted-foreground" />
-                <span className="mt-2 text-sm text-muted-foreground">
-                  Drop image or click to upload
-                </span>
-              </button>
-            )}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleLogoUpload}
-              className="hidden"
-            />
+      {/* Logo */}
+      <motion.div
+        className="surface p-6"
+        variants={fadeUp}
+        initial="hidden"
+        animate="visible"
+        custom={0}
+      >
+        <div className="flex items-center gap-3 mb-1">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-purple/10">
+            <ImageIcon size={18} className="text-purple" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-foreground">Logo</h3>
+            <p className="text-xs text-muted-foreground">
+              Shown on hosted checkout and payment links
+            </p>
           </div>
         </div>
 
-        {/* Brand Color */}
-        <div className="rounded-lg border border-border bg-card p-6 shadow-sm">
-          <h3 className="font-medium text-foreground">Brand Color</h3>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Used as accent color on checkout pages
-          </p>
-          <div className="mt-4 flex items-center gap-4">
-            <div className="relative">
-              <input
-                type="color"
-                value={brandColor}
-                onChange={(e) => setBrandColor(e.target.value)}
-                className="h-10 w-10 cursor-pointer rounded-lg border border-border"
-              />
+        <div className="mt-5 space-y-4">
+          {logoUrl && (
+            <div className="relative inline-block">
+              <div className="overflow-hidden rounded-2xl border border-border/60 bg-secondary/30 p-4">
+                <img
+                  src={logoUrl}
+                  alt="Brand logo"
+                  className="h-24 object-contain"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = "none";
+                  }}
+                />
+              </div>
+              <button
+                onClick={() => setLogoUrl("")}
+                className="absolute -right-2 -top-2 rounded-full bg-destructive p-1.5 text-destructive-foreground shadow-md hover:scale-110 transition-transform"
+              >
+                <Trash2 size={12} />
+              </button>
             </div>
-            <Input
+          )}
+          <Input
+            label="Logo URL"
+            placeholder="https://your-cdn.com/logo.png"
+            value={logoUrl}
+            onChange={(e) => setLogoUrl(e.target.value)}
+          />
+        </div>
+      </motion.div>
+
+      {/* Brand Color */}
+      <motion.div
+        className="surface p-6"
+        variants={fadeUp}
+        initial="hidden"
+        animate="visible"
+        custom={1}
+      >
+        <div className="flex items-center gap-3 mb-1">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-teal/10">
+            <Palette size={18} className="text-teal" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-foreground">Brand Color</h3>
+            <p className="text-xs text-muted-foreground">
+              Used as accent color on checkout pages
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-5 flex items-center gap-4">
+          <label className="relative cursor-pointer group">
+            <input
+              type="color"
               value={brandColor}
               onChange={(e) => setBrandColor(e.target.value)}
-              placeholder="#007BFF"
-              className="w-32"
+              className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
             />
             <div
-              className="h-10 w-10 rounded-lg border border-border"
+              className="h-11 w-11 rounded-xl border-2 border-border/60 shadow-sm transition-all group-hover:scale-105 group-hover:shadow-md"
               style={{ backgroundColor: brandColor }}
             />
+          </label>
+          <Input
+            value={brandColor}
+            onChange={(e) => setBrandColor(e.target.value)}
+            placeholder="#007BFF"
+            className="w-36"
+          />
+          <div
+            className="hidden sm:flex h-8 items-center rounded-lg px-3 text-xs font-medium text-white"
+            style={{ backgroundColor: brandColor }}
+          >
+            Preview
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Preview */}
+      <motion.div
+        className="surface p-6"
+        variants={fadeUp}
+        initial="hidden"
+        animate="visible"
+        custom={2}
+      >
+        <div className="flex items-center gap-3 mb-1">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue/10">
+            <Eye size={18} className="text-blue" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-foreground">Preview</h3>
+            <p className="text-xs text-muted-foreground">
+              How your branding will appear on checkout
+            </p>
           </div>
         </div>
 
-        {/* Preview */}
-        <div className="rounded-lg border border-border bg-card p-6 shadow-sm">
-          <h3 className="font-medium text-foreground">Preview</h3>
-          <p className="mt-1 text-sm text-muted-foreground">
-            How your branding will appear on checkout pages
-          </p>
-          <div className="mt-4 rounded-lg border border-border bg-background p-6">
-            {/* Mini checkout preview */}
-            <div className="mx-auto max-w-sm space-y-4">
-              {/* Header with logo */}
-              <div className="flex items-center gap-3">
-                {logo ? (
-                  <img src={logo} alt="Logo" className="h-8 object-contain" />
-                ) : (
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-secondary">
-                    <ImageIcon size={16} className="text-muted-foreground" />
-                  </div>
-                )}
-                <span className="font-display font-semibold text-foreground">
-                  Your Business
-                </span>
-              </div>
-
-              {/* Payment amount */}
-              <div className="rounded-lg border border-border bg-card p-4">
-                <p className="text-sm text-muted-foreground">Amount to pay</p>
-                <p className="mt-1 text-2xl font-semibold text-foreground">
-                  $100.00
-                </p>
-              </div>
-
-              {/* Payment methods */}
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-foreground">
-                  Select payment method
-                </p>
-                {["Card", "Bank Transfer", "Crypto"].map((method) => (
-                  <button
-                    key={method}
-                    className="w-full rounded-lg border border-border bg-card p-3 text-left text-sm text-foreground hover:bg-secondary/50 transition-colors"
-                    style={{
-                      borderColor: method === "Card" ? brandColor : undefined,
-                      backgroundColor:
-                        method === "Card" ? `${brandColor}10` : undefined,
-                    }}
-                  >
-                    {method}
-                  </button>
-                ))}
-              </div>
-
-              {/* Pay button */}
-              <button
-                className="w-full rounded-lg py-3 font-medium text-white transition-all hover:brightness-110"
-                style={{ backgroundColor: brandColor }}
-              >
-                Pay Now
-              </button>
+        <div className="mt-5 overflow-hidden rounded-2xl border border-border/60 bg-background p-6">
+          <div className="mx-auto max-w-sm space-y-5">
+            {/* Header */}
+            <div className="flex items-center gap-3">
+              {logoUrl ? (
+                <img
+                  src={logoUrl}
+                  alt="Logo"
+                  className="h-8 object-contain"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = "none";
+                  }}
+                />
+              ) : (
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-secondary">
+                  <ImageIcon size={16} className="text-muted-foreground" />
+                </div>
+              )}
+              <span className="font-display font-semibold text-foreground">
+                {merchant?.companyName || merchant?.name || "Your Business"}
+              </span>
             </div>
+
+            {/* Amount */}
+            <div className="rounded-2xl border border-border/60 bg-card p-5">
+              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                Amount to pay
+              </p>
+              <p className="mt-1 text-3xl font-bold tracking-tight text-foreground">
+                $100.00
+              </p>
+            </div>
+
+            {/* Payment methods */}
+            <div className="space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Payment Method
+              </p>
+              {paymentMethods.map((method, idx) => (
+                <button
+                  key={method.label}
+                  className="flex w-full items-center gap-3 rounded-xl border bg-card p-3.5 text-left text-sm font-medium text-foreground transition-all duration-200 hover:shadow-sm"
+                  style={{
+                    borderColor: idx === 0 ? brandColor : "var(--border)",
+                    backgroundColor:
+                      idx === 0 ? `${brandColor}0d` : undefined,
+                  }}
+                >
+                  <method.icon
+                    size={16}
+                    style={{ color: idx === 0 ? brandColor : undefined }}
+                    className={idx !== 0 ? "text-muted-foreground" : ""}
+                  />
+                  {method.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Pay button */}
+            <button
+              className="w-full rounded-xl py-3.5 text-sm font-semibold text-white transition-all hover:brightness-110 hover:shadow-lg"
+              style={{ backgroundColor: brandColor }}
+            >
+              Pay Now
+            </button>
           </div>
         </div>
+      </motion.div>
 
-        {/* Save button */}
-        <div className="flex justify-end">
-          <Button onClick={handleSave} loading={isLoading}>
-            Save Changes
-          </Button>
-        </div>
-      </div>
+      {/* Save */}
+      <motion.div
+        className="flex justify-end"
+        variants={fadeUp}
+        initial="hidden"
+        animate="visible"
+        custom={3}
+      >
+        <Button
+          onClick={handleSave}
+          loading={updateBranding.isPending}
+          disabled={!hasChanges}
+        >
+          Save Changes
+        </Button>
+      </motion.div>
     </div>
   );
 }

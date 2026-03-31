@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import {
   Home,
@@ -10,11 +10,11 @@ import {
   Settings,
   LifeBuoy,
   Send,
-} from "lucide-react"
+} from "lucide-react";
 
-import { NavMain } from "@/components/nav-main"
-import { NavSecondary } from "@/components/nav-secondary"
-import { NavUser } from "@/components/nav-user"
+import { NavMain } from "@/components/nav-main";
+import { NavSecondary } from "@/components/nav-secondary";
+import { NavUser } from "@/components/nav-user";
 import {
   Sidebar,
   SidebarContent,
@@ -23,7 +23,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "@/components/ui/sidebar"
+} from "@tavvio/ui";
 
 const navMain = [
   { title: "Overview", url: "/", icon: Home },
@@ -44,16 +44,19 @@ const navMain = [
       { title: "Branding", url: "/settings/branding" },
     ],
   },
-]
+];
 
 const navSecondary = [
   { title: "Support", url: "#", icon: LifeBuoy },
   { title: "Feedback", url: "#", icon: Send },
-]
+];
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
-    <Sidebar collapsible="icon" {...props}>
+    <Sidebar
+      className="top-(--header-height) h-[calc(100svh-var(--header-height))]!"
+      {...props}
+    >
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
@@ -63,8 +66,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   T
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-display font-semibold">Tavvio</span>
-                  <span className="truncate text-xs text-muted-foreground">Merchant Dashboard</span>
+                  <span className="truncate font-display font-semibold">
+                    Tavvio
+                  </span>
+                  <span className="truncate text-xs text-muted-foreground">
+                    Merchant Dashboard
+                  </span>
                 </div>
               </a>
             </SidebarMenuButton>
@@ -79,5 +86,5 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <NavUser />
       </SidebarFooter>
     </Sidebar>
-  )
+  );
 }
