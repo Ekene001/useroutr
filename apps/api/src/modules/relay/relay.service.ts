@@ -65,10 +65,10 @@ export class RelayService implements OnModuleInit {
   // ── Stellar watcher ────────────────────────────────────────────────────────
 
   private watchStellarHTLC(): void {
-    const htlcContractId = process.env.STELLAR_HTLC_CONTRACT_ID ?? '';
+    const htlcContractId = process.env.SOROBAN_HTLC_CONTRACT_ID ?? '';
     if (!htlcContractId) {
       this.logger.warn(
-        'STELLAR_HTLC_CONTRACT_ID not set, skipping Stellar watcher',
+        'SOROBAN_HTLC_CONTRACT_ID not set, skipping Stellar watcher',
       );
       return;
     }
@@ -114,12 +114,17 @@ export class RelayService implements OnModuleInit {
    * Uses exponential backoff capped at MAX_RECONNECT_DELAY_MS.
    */
   private startChainWatcher(chain: Chain, attempt = 0): void {
-    const rpcUrl = process.env[`RPC_URL_${chain.toUpperCase()}`];
+    const rpcUrl = process.env[`RPC_${chain.toUpperCase()}`];
     const htlcAddress = process.env[`HTLC_ADDRESS_${chain.toUpperCase()}`];
 
-    if (!rpcUrl || !htlcAddress) {
+    if (
+      !rpcUrl ||
+      !htlcAddress ||
+      htlcAddress === '0x...' ||
+      !htlcAddress.match(/^0x[0-9a-fA-F]{40}$/)
+    ) {
       this.logger.debug(
-        `RPC or HTLC address missing for ${chain}, skipping watcher`,
+        `RPC or valid HTLC address missing for ${chain}, skipping watcher`,
       );
       return;
     }

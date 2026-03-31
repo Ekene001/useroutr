@@ -1,6 +1,7 @@
 // apps/api/src/modules/bridge/bridge.module.ts
 
 import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 import { BridgeRouterService } from './bridge-router.service';
 import { CctpService } from './providers/cctp.service';
 import { WormholeService } from './providers/wormhole.service';
@@ -8,7 +9,7 @@ import { LayerswapService } from './providers/layerswap.service';
 import { StellarModule } from '../stellar/stellar.module';
 
 @Module({
-  imports: [StellarModule],
+  imports: [ConfigModule, StellarModule],
   providers: [
     BridgeRouterService,
     CctpService,
