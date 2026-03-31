@@ -23,7 +23,6 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CombinedAuthGuard } from '../../common/guards/combined-auth.guard';
 
 interface AuthenticatedRequest extends Request {
-  merchant?: { id: string };
   user?: { id: string; merchantId?: string };
 }
 
@@ -40,7 +39,7 @@ export class PaymentsController {
     @Body() dto: CreatePaymentDto,
     @Headers('idempotency-key') idempotencyKey?: string,
   ): Promise<PaymentResponseDto> {
-    const merchantId = req.merchant?.id || req.user?.merchantId;
+    const merchantId = req.user?.id || req.user?.merchantId;
     if (!merchantId) {
       throw new Error('Unable to resolve merchant identity');
     }
@@ -141,5 +140,10 @@ export class CheckoutPaymentsController {
   @Get('checkout/:paymentId')
   getCheckoutPayment(@Param('paymentId') paymentId: string) {
     return this.paymentsService.getCheckoutPayment(paymentId);
+  }
+
+  @Get('checkout/:paymentId/quote')
+  getCheckoutQuote(@Param('paymentId') paymentId: string) {
+    return this.paymentsService.getCheckoutQuote(paymentId);
   }
 }

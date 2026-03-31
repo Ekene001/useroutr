@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Open_Sans, IBM_Plex_Mono } from "next/font/google";
-import { QueryProvider } from "@/providers/QueryProvider";
+import { WalletProviders } from "@/providers/WalletProviders";
+import "@rainbow-me/rainbowkit/styles.css";
 import "./globals.css";
 
 const inter = Inter({
@@ -38,7 +39,7 @@ export default function RootLayout({
       className={`${inter.variable} ${openSans.variable} ${ibmPlexMono.variable} light`}
     >
       <body className="min-h-screen bg-background antialiased">
-        <QueryProvider>{children}</QueryProvider>
+        <WalletProviders>{children}</WalletProviders>
       </body>
     </html>
   );

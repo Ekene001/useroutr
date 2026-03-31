@@ -1,3 +1,4 @@
+"use client";
 import { OrderSummary } from "@/components/OrderSummary";
 import { CryptoPayment } from "@/components/CryptoPayment";
 import { QuoteCountdown } from "@/components/QuoteCountdown";
@@ -21,7 +22,9 @@ export default function CryptoPaymentPage() {
       <div className="flex min-h-screen justify-center items-center bg-muted/30">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-sm text-muted-foreground">Loading payment details...</p>
+          <p className="mt-4 text-sm text-muted-foreground">
+            Loading payment details...
+          </p>
         </div>
       </div>
     );
@@ -30,13 +33,17 @@ export default function CryptoPaymentPage() {
   return (
     <div className="flex min-h-screen justify-center bg-muted/30 px-4 py-8 sm:px-8">
       <div className="w-full max-w-115 space-y-6">
-        <MerchantBranding />
-        <OrderSummary compact />
-        <QuoteCountdown 
-          expiresAt={payment.expiresAt} 
-          onExpired={handleQuoteExpired} 
+        <MerchantBranding merchantName={payment.merchantName} />
+        <OrderSummary
+          amount={payment.amount}
+          currency={payment.currency}
+          description={payment.description}
         />
-        <CryptoPayment 
+        <QuoteCountdown
+          expiresAt={payment.expiresAt}
+          onExpired={handleQuoteExpired}
+        />
+        <CryptoPayment
           paymentId={paymentId}
           merchantAmount={payment.amount}
           merchantCurrency={payment.currency}

@@ -20,7 +20,7 @@ export function OrderSummary({
     <div
       className={cn(
         "rounded-xl border border-border bg-card shadow-sm",
-        compact ? "p-4" : "p-6"
+        compact ? "p-4" : "p-6",
       )}
     >
       {!compact && (

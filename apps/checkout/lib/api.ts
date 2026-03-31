@@ -1,4 +1,4 @@
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3333";
 
 interface RequestOptions {
   params?: Record<string, unknown>;
@@ -8,7 +8,7 @@ interface RequestOptions {
 async function request<T>(
   method: string,
   path: string,
-  options: RequestOptions & { body?: unknown } = {}
+  options: RequestOptions & { body?: unknown } = {},
 ): Promise<T> {
   const url = new URL(path, BASE_URL);
 
@@ -52,7 +52,9 @@ async function request<T>(
     throw new Error(message);
   }
 
-  return res.json();
+  const json = await res.json();
+  // The API wraps all responses in { data: ... } via TransformInterceptor
+  return json.data !== undefined ? json.data : json;
 }
 
 export const api = {

@@ -55,6 +55,13 @@ type PaymentWithRelations = Payment & {
     webhookUrl: string | null;
   };
   quote: {
+    id: string;
+    fromAsset: string;
+    fromAmount: Prisma.Decimal | number;
+    toAsset: string;
+    toAmount: Prisma.Decimal | number;
+    rate: Prisma.Decimal | number;
+    feeAmount: Prisma.Decimal | number;
     expiresAt: Date;
   };
 };
@@ -361,6 +368,22 @@ export class PaymentsService implements OnModuleInit {
               },
             ],
       expiresAt: payment.quote.expiresAt.toISOString(),
+    };
+  }
+
+  async getCheckoutQuote(paymentId: string) {
+    const payment = await this.getByIdWithRelations(paymentId);
+    const quote = payment.quote;
+
+    return {
+      id: quote.id,
+      fromAmount: this.toNumber(quote.fromAmount),
+      fromCurrency: quote.fromAsset,
+      toAmount: this.toNumber(quote.toAmount),
+      toCurrency: quote.toAsset,
+      rate: this.toNumber(quote.rate),
+      fee: this.toNumber(quote.feeAmount),
+      expiresAt: quote.expiresAt.toISOString(),
     };
   }
 
