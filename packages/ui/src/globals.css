@@ -1,32 +1,36 @@
 /*
  * Tavvio Design System Tokens
- * Follows the design system established in apps/www
+ * Professional fintech palette — dark-first, trust-forward
  * Consumed by: dashboard, checkout, and any future apps
  */
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
 
 :root {
   /* ── Background tiers ── */
-  --ink: #0a0c10;
-  --ink2: #12151c;
-  --ink3: #1a1e28;
+  --ink: oklch(0.13 0.008 265);
+  --ink2: oklch(0.17 0.01 265);
+  --ink3: oklch(0.22 0.012 265);
 
   /* ── Foreground / text ── */
-  --lead: #e8eaf0;
-  --body: #8a90a0;
-  --faint: #3a4055;
+  --lead: oklch(0.95 0.005 265);
+  --body: oklch(0.65 0.015 265);
+  --faint: oklch(0.38 0.012 265);
 
   /* ── Borders ── */
-  --rule: rgba(255, 255, 255, 0.08);
-  --rule2: rgba(255, 255, 255, 0.14);
+  --rule: oklch(1 0 0 / 8%);
+  --rule2: oklch(1 0 0 / 14%);
 
   /* ── Brand palette ── */
-  --blue: #2b6feb;
-  --blue2: #4a8bf5;
-  --teal: #0fb8ac;
-  --amber: #f5a623;
-  --red: #e8554e;
-  --green: #34c97b;
-  --purple: #6f42c1;
+  --blue: oklch(0.55 0.18 255);
+  --blue2: oklch(0.65 0.17 255);
+  --teal: oklch(0.72 0.14 185);
+  --amber: oklch(0.78 0.16 75);
+  --red: oklch(0.58 0.22 25);
+  --green: oklch(0.68 0.17 155);
+  --purple: oklch(0.52 0.18 295);
 
   /* ── Radius scale ── */
   --radius: 0.625rem;
@@ -36,9 +40,9 @@
   --radius-xl: calc(var(--radius) * 1.6);
 
   /* ── Shadows ── */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3);
-  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.4);
+  --shadow-sm: 0 1px 2px oklch(0 0 0 / 20%);
+  --shadow-md: 0 4px 12px oklch(0 0 0 / 30%);
+  --shadow-lg: 0 8px 28px oklch(0 0 0 / 40%);
 
   /* ── shadcn / component token mapping ── */
   --background: var(--ink);
@@ -48,7 +52,7 @@
   --popover: var(--ink2);
   --popover-foreground: var(--lead);
   --primary: var(--blue);
-  --primary-foreground: #ffffff;
+  --primary-foreground: oklch(1 0 0);
   --secondary: var(--ink3);
   --secondary-foreground: var(--lead);
   --muted: var(--ink3);
@@ -56,14 +60,21 @@
   --accent: var(--ink2);
   --accent-foreground: var(--lead);
   --destructive: var(--red);
-  --destructive-foreground: #ffffff;
+  --destructive-foreground: oklch(1 0 0);
   --success: var(--green);
-  --success-foreground: #ffffff;
+  --success-foreground: oklch(1 0 0);
   --warning: var(--amber);
-  --warning-foreground: #ffffff;
+  --warning-foreground: oklch(0.25 0.02 75);
   --border: var(--rule);
-  --input: var(--rule);
-  --ring: var(--blue);
+  --input: var(--rule2);
+  --ring: var(--blue2);
+
+  /* ── Chart palette ── */
+  --chart-1: var(--blue);
+  --chart-2: var(--teal);
+  --chart-3: var(--amber);
+  --chart-4: var(--purple);
+  --chart-5: var(--green);
 
   /* ── Typography ── */
   --font-display: "Inter", "Trebuchet MS", sans-serif;
@@ -76,41 +87,104 @@
 
 /* ── Light mode override ── */
 .light {
-  --ink: #ffffff;
-  --ink2: #f8f9fb;
-  --ink3: #f0f2f5;
+  --ink: oklch(1 0 0);
+  --ink2: oklch(0.975 0.003 265);
+  --ink3: oklch(0.945 0.006 265);
 
-  --lead: #0a0c10;
-  --body: #5f6775;
-  --faint: #8a90a0;
+  --lead: oklch(0.15 0.01 265);
+  --body: oklch(0.45 0.015 265);
+  --faint: oklch(0.72 0.01 265);
 
-  --rule: #e2e5eb;
-  --rule2: #cdd1d9;
+  --rule: oklch(0.88 0.008 265);
+  --rule2: oklch(0.82 0.01 265);
 
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
-  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+  --primary-foreground: oklch(1 0 0);
+  --warning-foreground: oklch(0.25 0.02 75);
 
-  --background: #ffffff;
-  --foreground: #0a0c10;
-  --card: #f8f9fb;
-  --card-foreground: #0a0c10;
-  --popover: #ffffff;
-  --popover-foreground: #0a0c10;
-  --secondary: #f0f2f5;
-  --secondary-foreground: #0a0c10;
-  --muted: #f0f2f5;
-  --muted-foreground: #5f6775;
-  --accent: #f8f9fb;
-  --accent-foreground: #0a0c10;
-  --border: #e2e5eb;
-  --input: #e2e5eb;
+  --shadow-sm: 0 1px 2px oklch(0 0 0 / 5%);
+  --shadow-md: 0 4px 12px oklch(0 0 0 / 8%);
+  --shadow-lg: 0 8px 28px oklch(0 0 0 / 12%);
+}
+
+@theme inline {
+  /* ── Colors ── */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+
+  /* ── Chart palette ── */
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  /* ── Brand palette ── */
+  --color-ink: var(--ink);
+  --color-ink2: var(--ink2);
+  --color-ink3: var(--ink3);
+  --color-rule: var(--rule);
+  --color-rule2: var(--rule2);
+  --color-lead: var(--lead);
+  --color-body: var(--body);
+  --color-faint: var(--faint);
+  --color-blue: var(--blue);
+  --color-blue2: var(--blue2);
+  --color-teal: var(--teal);
+  --color-amber: var(--amber);
+  --color-red: var(--red);
+  --color-green: var(--green);
+  --color-purple: var(--purple);
+
+  /* ── Font families ── */
+  --font-display: var(--font-display);
+  --font-body: var(--font-body);
+  --font-mono: var(--font-mono);
+
+  /* ── Radius ── */
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
 }
 
 /* ── Skeleton shimmer ── */
 @keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 .skeleton {
@@ -127,11 +201,23 @@
 
 /* ── Toast stack animation ── */
 @keyframes toast-slide-in {
-  from { transform: translateX(100%); opacity: 0; }
-  to { transform: translateX(0); opacity: 1; }
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 
 @keyframes toast-slide-out {
-  from { transform: translateX(0); opacity: 1; }
-  to { transform: translateX(100%); opacity: 0; }
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
 }

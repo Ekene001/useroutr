@@ -8,7 +8,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { api } from "@/lib/api";
 import {
   clearPendingVerificationEmail,
@@ -28,6 +28,8 @@ export interface Merchant {
   id: string;
   email: string;
   name: string;
+  companyName?: string;
+  logoUrl?: string;
 }
 
 export interface RegisterDto {
@@ -47,13 +49,21 @@ interface AuthState {
   logout(): void;
   refreshToken(): Promise<void>;
   resendVerificationEmail(): Promise<void>;
+  verifyOtp(email: string, code: string): Promise<void>;
 }
 
 // ── Context ───────────────────────────────────────────────────────────────────
 
 const AuthContext = createContext<AuthState | undefined>(undefined);
 
-const PUBLIC_PATHS = ["/login", "/register", "/verify", "/payments"];
+const PUBLIC_PATHS = [
+  "/login",
+  "/register",
+  "/verify",
+  "/forgot-password",
+  "/reset-password",
+  "/payments",
+];
 const AUTH_ENTRY_PATHS = ["/login", "/register"];
 
 // ── Provider ──────────────────────────────────────────────────────────────────
@@ -62,11 +72,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [merchant, setMerchant] = useState<Merchant | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [verificationEmail, setVerificationEmail] = useState<string | null>(
-    null,
+    null
   );
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const clearRefreshTimer = useCallback(() => {
@@ -93,6 +104,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const expiryMs = getTokenExpiryMs(accessToken);
       if (!expiryMs) return;
 
+      // Refresh 60 seconds before expiry
       const delay = expiryMs - Date.now() - 60_000;
 
       if (delay <= 0) {
@@ -103,10 +115,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             scheduleRefresh(newToken);
             return;
           }
-
           logout();
         })();
-
         return;
       }
 
@@ -117,11 +127,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           scheduleRefresh(newToken);
           return;
         }
-
         logout();
       }, delay);
     },
-    [clearRefreshTimer, logout],
+    [clearRefreshTimer, logout]
   );
 
   // ── Load existing session on mount ─────────────────────────────────────────
@@ -134,7 +143,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const storedToken = getToken();
         if (!storedToken) return;
 
-        // If expired, try refresh
         const activeToken = isTokenExpired(storedToken)
           ? await refreshAccessToken()
           : storedToken;
@@ -144,7 +152,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setToken(activeToken);
         const me = await api.get<Merchant>("/auth/me");
         setMerchant(me);
-        setVerificationEmail((currentEmail) => currentEmail ?? me.email);
+        setVerificationEmail((cur) => cur ?? me.email);
         scheduleRefresh(activeToken);
       } catch {
         clearTokens();
@@ -160,7 +168,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, [clearRefreshTimer, scheduleRefresh]);
 
-  // ── Guard: redirect unauthenticated users away from protected routes ────────
+  // ── Guard: redirect unauthenticated users ──────────────────────────────────
 
   useEffect(() => {
     if (isLoading) return;
@@ -168,14 +176,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const isPublic = PUBLIC_PATHS.some((p) => pathname.startsWith(p));
 
     if (!merchant && !isPublic) {
-      router.replace("/login");
+      const loginUrl = `/login?redirect=${encodeURIComponent(pathname)}`;
+      router.replace(loginUrl);
       return;
     }
 
     if (merchant && AUTH_ENTRY_PATHS.some((p) => pathname.startsWith(p))) {
-      router.replace("/");
+      // Redirect to where the user came from, or home
+      const redirect = searchParams.get("redirect") || "/";
+      router.replace(redirect);
     }
-  }, [merchant, isLoading, pathname, router]);
+  }, [merchant, isLoading, pathname, router, searchParams]);
 
   // ── Auth actions ───────────────────────────────────────────────────────────
 
@@ -192,7 +203,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     clearPendingVerificationEmail();
     setVerificationEmail(null);
     scheduleRefresh(data.accessToken);
-    router.replace("/");
+
+    // Redirect to original destination or home
+    const redirect = searchParams.get("redirect") || "/";
+    router.replace(redirect);
   };
 
   const register = async (dto: RegisterDto) => {
@@ -205,15 +219,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setTokens(data.accessToken, data.refreshToken);
     setToken(data.accessToken);
     setMerchant(data.merchant);
-    setPendingVerificationEmail(data.merchant.email ?? dto.email);
-    setVerificationEmail(data.merchant.email ?? dto.email);
+    const merchantEmail = data.merchant.email ?? dto.email;
+    setPendingVerificationEmail(merchantEmail);
+    setVerificationEmail(merchantEmail);
     scheduleRefresh(data.accessToken);
-    router.replace(
-      `/verify?email=${encodeURIComponent(data.merchant.email ?? dto.email)}`,
-    );
+    router.replace(`/verify?email=${encodeURIComponent(merchantEmail)}`);
   };
 
-  const refreshToken = async () => {
+  const refreshTokenFn = async () => {
     const newToken = await refreshAccessToken();
     if (newToken) {
       setToken(newToken);
@@ -235,9 +248,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error instanceof Error && /404|not found/i.test(error.message)) {
         throw new Error("Resend email is not available from the API yet.");
       }
-
       throw error;
     }
+  };
+
+  const verifyOtp = async (email: string, code: string) => {
+    await api.post("/auth/verify", { email, code });
+    clearPendingVerificationEmail();
+    setVerificationEmail(null);
+    router.replace("/");
   };
 
   return (
@@ -250,8 +269,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         login,
         register,
         logout,
-        refreshToken,
+        refreshToken: refreshTokenFn,
         resendVerificationEmail,
+        verifyOtp,
       }}
     >
       {children}

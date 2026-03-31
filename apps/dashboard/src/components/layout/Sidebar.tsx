@@ -3,27 +3,34 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  House,
+  Home,
   CreditCard,
-  Link as LinkIcon,
+  Link2,
   FileText,
-  ArrowsLeftRight,
-  ChartLine,
-  Gear,
-} from "@phosphor-icons/react";
+  ArrowLeftRight,
+  TrendingUp,
+  Settings,
+  type LucideIcon,
+} from "lucide-react";
 import { cn } from "@tavvio/ui";
 
-const NAV_ITEMS = [
-  { label: "Overview", href: "/", icon: House },
+interface NavItem {
+  label: string;
+  href: string;
+  icon: LucideIcon;
+}
+
+const NAV_ITEMS: NavItem[] = [
+  { label: "Overview", href: "/", icon: Home },
   { label: "Payments", href: "/payments", icon: CreditCard },
-  { label: "Payment Links", href: "/links", icon: LinkIcon },
+  { label: "Payment Links", href: "/links", icon: Link2 },
   { label: "Invoices", href: "/invoices", icon: FileText },
-  { label: "Payouts", href: "/payouts", icon: ArrowsLeftRight },
-  { label: "Analytics", href: "/analytics", icon: ChartLine },
+  { label: "Payouts", href: "/payouts", icon: ArrowLeftRight },
+  { label: "Analytics", href: "/analytics", icon: TrendingUp },
 ];
 
-const BOTTOM_ITEMS = [
-  { label: "Settings", href: "/settings", icon: Gear },
+const BOTTOM_ITEMS: NavItem[] = [
+  { label: "Settings", href: "/settings", icon: Settings },
 ];
 
 interface SidebarProps {
@@ -39,7 +46,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
     return pathname.startsWith(href);
   };
 
-  const renderItem = (item: (typeof NAV_ITEMS)[0]) => {
+  const renderItem = (item: NavItem) => {
     const Icon = item.icon;
     const active = isActive(item.href);
 
@@ -56,7 +63,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
           collapsed && "justify-center px-2"
         )}
       >
-        <Icon size={20} weight={active ? "fill" : "regular"} />
+        <Icon className={cn("size-5 shrink-0", active && "stroke-[2.5]")} />
         {!collapsed && <span>{item.label}</span>}
       </Link>
     );
@@ -76,7 +83,10 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
           collapsed && "justify-center px-2"
         )}
       >
-        <button onClick={onToggle} className="font-display text-lg font-bold text-foreground">
+        <button
+          onClick={onToggle}
+          className="font-display text-lg font-bold text-foreground"
+        >
           {collapsed ? "T" : "Tavvio"}
         </button>
       </div>
@@ -86,7 +96,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
         {NAV_ITEMS.map(renderItem)}
       </nav>
 
-      {/* Divider + bottom nav */}
+      {/* Bottom nav */}
       <div className="border-t border-border p-2">
         {BOTTOM_ITEMS.map(renderItem)}
       </div>

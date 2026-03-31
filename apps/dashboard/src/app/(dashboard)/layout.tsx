@@ -1,11 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { Sidebar } from "@/components/layout/Sidebar";
-import { Topbar } from "@/components/layout/Topbar";
-import { MobileNav } from "@/components/layout/MobileNav";
+import { AppSidebar } from "@/components/app-sidebar";
+import { SiteHeader } from "@/components/site-header";
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { useAuth } from "@/providers/AuthProvider";
-import { cn } from "@/lib/utils";
 
 export default function DashboardLayout({
   children,
@@ -13,7 +11,6 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const { merchant, isLoading } = useAuth();
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   if (isLoading) {
     return (
@@ -36,28 +33,14 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Desktop sidebar */}
-      <div className="hidden lg:block">
-        <Sidebar
-          collapsed={sidebarCollapsed}
-          onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
-        />
+    <SidebarProvider className="flex flex-col">
+      <SiteHeader />
+      <div className="flex flex-1">
+        <AppSidebar />
+        <SidebarInset>
+          {/* <div className="flex-1 p-6">{children}</div> */}
+        </SidebarInset>
       </div>
-
-      {/* Main content */}
-      <div
-        className={cn(
-          "transition-[margin-left] duration-200",
-          sidebarCollapsed ? "lg:ml-[48px]" : "lg:ml-[260px]"
-        )}
-      >
-        <div className="flex items-center lg:hidden">
-          <MobileNav />
-        </div>
-        <Topbar />
-        <main className="p-6">{children}</main>
-      </div>
-    </div>
+    </SidebarProvider>
   );
 }

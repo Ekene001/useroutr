@@ -14,6 +14,15 @@ interface RequestOptions {
 let isRefreshing = false;
 let refreshQueue: Array<(token: string | null) => void> = [];
 
+interface ApiErrorBody {
+  error?: { message?: string; code?: string };
+  message?: string;
+}
+
+function extractErrorMessage(body: ApiErrorBody, fallback: string): string {
+  return body?.error?.message ?? body?.message ?? fallback;
+}
+
 async function parseResponse<T>(response: Response): Promise<T> {
   if (response.status === 204) {
     return undefined as T;
@@ -24,7 +33,14 @@ async function parseResponse<T>(response: Response): Promise<T> {
     return undefined as T;
   }
 
-  return JSON.parse(text) as T;
+  const json = JSON.parse(text);
+
+  // Unwrap the { data: T } envelope from the API's TransformInterceptor
+  if (json && typeof json === "object" && "data" in json && !("meta" in json)) {
+    return json.data as T;
+  }
+
+  return json as T;
 }
 
 async function getValidToken(): Promise<string | null> {
@@ -119,11 +135,11 @@ async function request<T>(
       }
 
       if (!retryRes.ok) {
-        const retryErrorBody: { message?: string } = await parseResponse<{ message?: string }>(
+        const retryErrorBody = await parseResponse<ApiErrorBody>(
           retryRes
-        ).catch(() => ({} as { message?: string }));
+        ).catch(() => ({} as ApiErrorBody));
         throw new Error(
-          retryErrorBody.message ?? `API error: ${retryRes.status} ${retryRes.statusText}`
+          extractErrorMessage(retryErrorBody, `API error: ${retryRes.status} ${retryRes.statusText}`)
         );
       }
 
@@ -132,10 +148,10 @@ async function request<T>(
   }
 
   if (!res.ok) {
-    const errorBody: { message?: string } = await parseResponse<{ message?: string }>(res).catch(
-      () => ({} as { message?: string })
+    const errorBody = await parseResponse<ApiErrorBody>(res).catch(
+      () => ({} as ApiErrorBody)
     );
-    throw new Error(errorBody.message ?? `API error: ${res.status} ${res.statusText}`);
+    throw new Error(extractErrorMessage(errorBody, `API error: ${res.status} ${res.statusText}`));
   }
 
   return parseResponse<T>(res);
