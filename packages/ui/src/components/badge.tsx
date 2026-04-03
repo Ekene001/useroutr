@@ -2,14 +2,14 @@
 
 import { cva, type VariantProps } from "class-variance-authority";
 import {
-  CheckCircle,
+  CheckCircle2,
   Clock,
-  ArrowsClockwise,
+  RefreshCw,
   XCircle,
-  Prohibit,
-  Warning,
+  Ban,
+  AlertTriangle,
   FileText,
-} from "@phosphor-icons/react";
+} from "lucide-react";
 import { cn } from "../utils";
 
 const badgeVariants = cva(
@@ -37,16 +37,16 @@ const badgeVariants = cva(
 );
 
 const BADGE_ICONS = {
-  completed: CheckCircle,
+  completed: CheckCircle2,
   pending: Clock,
-  processing: ArrowsClockwise,
+  processing: RefreshCw,
   failed: XCircle,
-  cancelled: Prohibit,
-  overdue: Warning,
+  cancelled: Ban,
+  overdue: AlertTriangle,
   draft: FileText,
-  active: CheckCircle,
+  active: CheckCircle2,
   expired: Clock,
-  deactivated: Prohibit,
+  deactivated: Ban,
   default: null,
 } as const;
 
@@ -61,7 +61,7 @@ function Badge({ className, variant = "default", showIcon = true, children, ...p
 
   return (
     <span className={cn(badgeVariants({ variant }), className)} {...props}>
-      {showIcon && Icon && <Icon size={14} weight="fill" />}
+      {showIcon && Icon && <Icon size={14} />}
       {children}
     </span>
   );
