@@ -157,39 +157,113 @@ export const merchantPaymentNotificationTemplate = (payment: Payment) =>
     </p>
   `);
 
-export const invoiceTemplate = (invoice: Invoice, appUrl: string) =>
-  layout(`
-    <h2 style="margin: 0 0 16px; font-size: 20px; color: #18181b;">Invoice ${esc(invoice.id)}</h2>
-    <p style="margin: 0 0 16px; font-size: 14px; color: #3f3f46; line-height: 1.6;">
-      You have a new invoice. Please review the details below.
-    </p>
+export const invoiceTemplate = (invoice: Invoice, appUrl: string) => {
+  const brand = invoice.merchantBrandColor ?? '#000000';
+  const payUrl = invoice.checkoutUrl ?? `${appUrl}/pay/${encodeURIComponent(invoice.id)}`;
+  const ctaButton = `
+<table role="presentation" cellpadding="0" cellspacing="0" style="margin: 24px 0;">
+  <tr>
+    <td style="background-color: ${esc(brand)}; border-radius: 6px; padding: 12px 28px;">
+      <a href="${esc(payUrl)}" style="color: #ffffff; text-decoration: none; font-size: 14px; font-weight: 600; display: inline-block;">
+        Pay Now
+      </a>
+    </td>
+  </tr>
+</table>`;
+
+  const pixel = invoice.trackingPixelUrl
+    ? `<img src="${esc(invoice.trackingPixelUrl)}" width="1" height="1" style="display:block;border:0;" alt="" />`
+    : '';
+
+  const fromLine = invoice.merchantName
+    ? `<p style="margin: 0 0 16px; font-size: 14px; color: #3f3f46;">
+        You have a new invoice from <strong>${esc(invoice.merchantName)}</strong>.
+        ${invoice.merchantEmail ? `Questions? Reply to <a href="mailto:${esc(invoice.merchantEmail)}">${esc(invoice.merchantEmail)}</a>.` : ''}
+      </p>`
+    : `<p style="margin: 0 0 16px; font-size: 14px; color: #3f3f46;">You have a new invoice. Please review the details below.</p>`;
+
+  const greeting = invoice.customerName
+    ? `<p style="margin: 0 0 16px; font-size: 14px; color: #3f3f46;">Hi <strong>${esc(invoice.customerName)}</strong>,</p>`
+    : '';
+
+  const customMessage = invoice.message
+    ? `<p style="margin: 0 0 16px; font-size: 14px; color: #3f3f46; line-height: 1.6; padding: 12px 16px; background: #f4f4f5; border-radius: 6px; border-left: 3px solid ${esc(brand)};">
+        ${esc(invoice.message)}
+      </p>`
+    : '';
+
+  const logoHtml = invoice.merchantLogo
+    ? `<img src="${esc(invoice.merchantLogo)}" alt="${esc(invoice.merchantName ?? '')}" style="height:40px;width:auto;object-fit:contain;margin-bottom:4px;" />`
+    : '';
+
+  return layout(`
+    ${logoHtml}
+    <h2 style="margin: 0 0 16px; font-size: 20px; color: #18181b;">Invoice #${esc(invoice.reference ?? invoice.id)}</h2>
+    ${greeting}
+    ${fromLine}
+    ${customMessage}
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #fafafa; border-radius: 6px; padding: 16px; margin-bottom: 16px;">
       <tr><td style="padding: 8px 16px; font-size: 13px; color: #71717a;">Amount Due</td>
           <td style="padding: 8px 16px; font-size: 13px; color: #18181b; text-align: right; font-weight: 600;">${formatAmount(invoice.amount, invoice.currency)}</td></tr>
       <tr><td style="padding: 8px 16px; font-size: 13px; color: #71717a;">Due Date</td>
           <td style="padding: 8px 16px; font-size: 13px; color: #18181b; text-align: right;">${invoice.dueDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</td></tr>
       <tr><td style="padding: 8px 16px; font-size: 13px; color: #71717a;">Reference</td>
-          <td style="padding: 8px 16px; font-size: 13px; color: #18181b; text-align: right;">${esc(invoice.reference || invoice.id)}</td></tr>
+          <td style="padding: 8px 16px; font-size: 13px; color: #18181b; text-align: right;">${esc(invoice.reference ?? invoice.id)}</td></tr>
     </table>
-    ${button('Pay Now', `${appUrl}/pay/${encodeURIComponent(invoice.id)}`)}
+    ${ctaButton}
+    ${pixel}
   `);
+};
 
-export const invoiceReminderTemplate = (invoice: Invoice, appUrl: string) =>
-  layout(`
+export const invoiceReminderTemplate = (invoice: Invoice, appUrl: string) => {
+  const brand = invoice.merchantBrandColor ?? '#000000';
+  const payUrl = invoice.checkoutUrl ?? `${appUrl}/pay/${encodeURIComponent(invoice.id)}`;
+  const ctaButton = `
+<table role="presentation" cellpadding="0" cellspacing="0" style="margin: 24px 0;">
+  <tr>
+    <td style="background-color: ${esc(brand)}; border-radius: 6px; padding: 12px 28px;">
+      <a href="${esc(payUrl)}" style="color: #ffffff; text-decoration: none; font-size: 14px; font-weight: 600; display: inline-block;">
+        Pay Now
+      </a>
+    </td>
+  </tr>
+</table>`;
+
+  const now = new Date();
+  const isOverdue = invoice.dueDate < now;
+  const dueLabelColor = isOverdue ? '#dc2626' : '#18181b';
+  const dueLabel = isOverdue ? 'overdue' : daysUntil(invoice.dueDate);
+
+  const fromLine = invoice.merchantName
+    ? `<p style="margin: 0 0 16px; font-size: 14px; color: #3f3f46;">
+        This is a reminder from <strong>${esc(invoice.merchantName)}</strong>.
+      </p>`
+    : '';
+
+  const logoHtml = invoice.merchantLogo
+    ? `<img src="${esc(invoice.merchantLogo)}" alt="${esc(invoice.merchantName ?? '')}" style="height:40px;width:auto;object-fit:contain;margin-bottom:4px;" />`
+    : '';
+
+  return layout(`
+    ${logoHtml}
     <h2 style="margin: 0 0 16px; font-size: 20px; color: #18181b;">Invoice Reminder</h2>
+    ${fromLine}
     <p style="margin: 0 0 16px; font-size: 14px; color: #3f3f46; line-height: 1.6;">
-      Your invoice <strong>${esc(invoice.id)}</strong> for <strong>${formatAmount(invoice.amount, invoice.currency)}</strong> is due <strong>${daysUntil(invoice.dueDate)}</strong>.
+      Your invoice <strong>${esc(invoice.reference ?? invoice.id)}</strong> for
+      <strong>${formatAmount(invoice.amount, invoice.currency)}</strong> is
+      <strong style="color: ${dueLabelColor};">${esc(dueLabel)}</strong>.
     </p>
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #fafafa; border-radius: 6px; padding: 16px; margin-bottom: 16px;">
-      <tr><td style="padding: 8px 16px; font-size: 13px; color: #71717a;">Invoice ID</td>
-          <td style="padding: 8px 16px; font-size: 13px; color: #18181b; text-align: right;">${esc(invoice.id)}</td></tr>
+      <tr><td style="padding: 8px 16px; font-size: 13px; color: #71717a;">Reference</td>
+          <td style="padding: 8px 16px; font-size: 13px; color: #18181b; text-align: right;">${esc(invoice.reference ?? invoice.id)}</td></tr>
       <tr><td style="padding: 8px 16px; font-size: 13px; color: #71717a;">Amount</td>
           <td style="padding: 8px 16px; font-size: 13px; color: #18181b; text-align: right; font-weight: 600;">${formatAmount(invoice.amount, invoice.currency)}</td></tr>
       <tr><td style="padding: 8px 16px; font-size: 13px; color: #71717a;">Due Date</td>
-          <td style="padding: 8px 16px; font-size: 13px; color: #18181b; text-align: right;">${invoice.dueDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</td></tr>
+          <td style="padding: 8px 16px; font-size: 13px; color: ${dueLabelColor}; text-align: right; font-weight: 600;">${invoice.dueDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</td></tr>
     </table>
-    ${button('Pay Now', `${appUrl}/pay/${encodeURIComponent(invoice.id)}`)}
+    ${ctaButton}
   `);
+};
 
 export const payoutConfirmationTemplate = (payout: Payout) =>
   layout(`

@@ -25,6 +25,17 @@ export interface Invoice {
   currency: string;
   dueDate: Date;
   reference?: string;
+  // Merchant branding (used in invoice emails)
+  merchantName?: string;
+  merchantEmail?: string;
+  merchantLogo?: string;
+  merchantBrandColor?: string;
+  // Customer
+  customerName?: string;
+  // Email extras
+  message?: string;
+  trackingPixelUrl?: string;
+  checkoutUrl?: string;
 }
 
 export interface Payout {
