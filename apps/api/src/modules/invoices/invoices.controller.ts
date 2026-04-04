@@ -23,10 +23,18 @@ import {
   RecordPaymentDto,
 } from './dto/update-invoice.dto';
 import { InvoiceFiltersSchema, InvoiceFiltersDto } from './dto/invoice-filters.dto';
+import { SendInvoiceSchema, SendInvoiceDto } from './dto/send-invoice.dto';
 import { CombinedAuthGuard } from '../../common/guards/combined-auth.guard';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import { CurrentMerchant } from '../merchant/decorators/current-merchant.decorator';
+import { PublicRoute } from '../../common/decorators/public-route.decorator';
+
+// 1×1 transparent GIF — used as an email open-tracking pixel
+const TRACKING_PIXEL = Buffer.from(
+  'R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7',
+  'base64',
+);
 
 @Controller('v1/invoices')
 @UseGuards(CombinedAuthGuard)
@@ -84,13 +92,15 @@ export class InvoicesController {
   }
 
   // ── POST /v1/invoices/:id/send ─────────────────────────────────────────────
+  // Sends the invoice email with optional custom message, schedules reminders
   @Post(':id/send')
   @UseGuards(JwtAuthGuard)
-  async markSent(
+  async send(
     @CurrentMerchant('id') merchantId: string,
     @Param('id') id: string,
+    @Body(new ZodValidationPipe(SendInvoiceSchema)) dto: SendInvoiceDto,
   ) {
-    return this.invoicesService.markSent(id, merchantId);
+    return this.invoicesService.markSent(id, merchantId, dto);
   }
 
   // ── POST /v1/invoices/:id/cancel ───────────────────────────────────────────
@@ -114,8 +124,29 @@ export class InvoicesController {
     return this.invoicesService.recordPayment(id, merchantId, dto);
   }
 
+  // ── GET /v1/invoices/:id/track ─────────────────────────────────────────────
+  // Public endpoint — email clients load this pixel when the customer opens the email.
+  // Updates invoice SENT → VIEWED and returns a 1×1 transparent GIF.
+  @Get(':id/track')
+  @PublicRoute()
+  @HttpCode(HttpStatus.OK)
+  async trackView(
+    @Param('id') id: string,
+    @Res() res: Response,
+  ): Promise<void> {
+    // Fire-and-forget — never fail a pixel load due to our own errors
+    this.invoicesService.markViewed(id).catch(() => undefined);
+
+    res.set({
+      'Content-Type': 'image/gif',
+      'Content-Length': TRACKING_PIXEL.length,
+      'Cache-Control': 'no-store, no-cache, must-revalidate',
+      Pragma: 'no-cache',
+    });
+    res.end(TRACKING_PIXEL);
+  }
+
   // ── GET /v1/invoices/:id/pdf ───────────────────────────────────────────────
-  // Returns a redirect or the stored PDF URL (generates if not yet cached)
   @Get(':id/pdf')
   async getPdfUrl(
     @CurrentMerchant('id') merchantId: string,
@@ -126,7 +157,6 @@ export class InvoicesController {
   }
 
   // ── GET /v1/invoices/:id/pdf/download ──────────────────────────────────────
-  // Streams the PDF directly in the HTTP response
   @Get(':id/pdf/download')
   async downloadPdf(
     @CurrentMerchant('id') merchantId: string,

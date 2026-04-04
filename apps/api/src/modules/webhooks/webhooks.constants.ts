@@ -6,6 +6,8 @@ export const WEBHOOK_EVENTS = [
   'payout.initiated',
   'payout.completed',
   'payout.failed',
+  'invoice.sent',
+  'invoice.viewed',
   'invoice.paid',
   'invoice.overdue',
   'refund.created',
