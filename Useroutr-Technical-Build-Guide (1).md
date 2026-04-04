@@ -1,5 +1,4 @@
 
-
 | USEROUTR Technical Architecture & Build Guide  Non-Custodial Cross-Chain Payment Infrastructure Stellar · Soroban · NestJS · Next.js · Rust · HTLC Version 1.0  ·  2026  ·  Confidential |
 | ----- |
 
@@ -152,7 +151,7 @@ Useroutr uses a NestJS native monorepo. All code lives in one repository. Shared
 | │   │ |
 | │   ├── dashboard/                    \# Next.js 14 — merchant dashboard |
 | │   ├── checkout/                     \# Next.js 14 — hosted checkout (consumer) |
-| │   ├── www/                          \# Next.js 14 — marketing site tavio.io |
+| │   ├── www/                          \# Next.js 14 — marketing site useroutr.io |
 | │   └── docs/                         \# Next.js 14 — documentation site |
 | │ |
 | ├── packages/ |
@@ -190,7 +189,7 @@ Useroutr uses a NestJS native monorepo. All code lives in one repository. Shared
 
 This is the complete lifecycle of a single non-custodial cross-chain payment. Every box below corresponds to code you will write.
 
-| Example: Payer sends ETH on Base → Merchant receives USDC on BNB Chain 1\.  Merchant creates a payment request via Tavio API. Receives a checkout URL. 2\.  Payer opens checkout URL. Sees order summary and selects "EVM Wallet — Base". 3\.  Quote Service fetches ETH/USDC rate. Calculates Useroutr fee (basis points). Locks quote in Redis for 30 seconds. 4\.  Checkout displays: "Send 0.021 ETH on Base → Merchant receives 49.77 USDC on BNB". 30s countdown. 5\.  Payer approves transaction in MetaMask. Calls lock() on Useroutr's EVM HTLC contract on Base. 6\.  HTLC contract on Base locks 0.021 ETH. Emits Locked(lockId, hashlock, amount, timeout=24h) event. 7\.  Relay Service (NestJS) detects Locked event via Ethereum event listener. 8\.  Relay calls Soroban Settlement Contract: "A payment is locked on Base with hashlock H". 9\.  Settlement Contract: executes Stellar path payment ETH(wrapped) → USDC. Deducts Useroutr fee. Calls HTLC Contract: lock USDC for merchant with same hashlock H, timeout=12h. 10\. Relay Service detects Stellar HTLC lock. Calls withdraw(lockId, secret) on Stellar HTLC — reveals S. 11\. Stellar HTLC releases USDC to merchant's Stellar address. Emits Withdrawn(lockId, preimage=S) event. 12\. Relay Service detects Withdrawn event on Stellar. S is now public. 13\. Relay calls withdraw(sourceLockId, S) on Base HTLC contract. Useroutr liquidity pool reimbursed. 14\. Payment status updated to COMPLETED. Webhook fired to merchant. Dashboard updates via WebSocket. |
+| Example: Payer sends ETH on Base → Merchant receives USDC on BNB Chain 1\.  Merchant creates a payment request via Useroutr API. Receives a checkout URL. 2\.  Payer opens checkout URL. Sees order summary and selects "EVM Wallet — Base". 3\.  Quote Service fetches ETH/USDC rate. Calculates Useroutr fee (basis points). Locks quote in Redis for 30 seconds. 4\.  Checkout displays: "Send 0.021 ETH on Base → Merchant receives 49.77 USDC on BNB". 30s countdown. 5\.  Payer approves transaction in MetaMask. Calls lock() on Useroutr's EVM HTLC contract on Base. 6\.  HTLC contract on Base locks 0.021 ETH. Emits Locked(lockId, hashlock, amount, timeout=24h) event. 7\.  Relay Service (NestJS) detects Locked event via Ethereum event listener. 8\.  Relay calls Soroban Settlement Contract: "A payment is locked on Base with hashlock H". 9\.  Settlement Contract: executes Stellar path payment ETH(wrapped) → USDC. Deducts Useroutr fee. Calls HTLC Contract: lock USDC for merchant with same hashlock H, timeout=12h. 10\. Relay Service detects Stellar HTLC lock. Calls withdraw(lockId, secret) on Stellar HTLC — reveals S. 11\. Stellar HTLC releases USDC to merchant's Stellar address. Emits Withdrawn(lockId, preimage=S) event. 12\. Relay Service detects Withdrawn event on Stellar. S is now public. 13\. Relay calls withdraw(sourceLockId, S) on Base HTLC contract. Useroutr liquidity pool reimbursed. 14\. Payment status updated to COMPLETED. Webhook fired to merchant. Dashboard updates via WebSocket. |
 | :---- |
 
 ## **The Bridge Router — Chain Support Matrix**
@@ -1176,8 +1175,8 @@ Never commit secrets to git. All environment variables are injected at runtime. 
 |   |
 | \# ── Stellar ─────────────────────────────────────────────────── |
 | STELLAR\_NETWORK="testnet"   \# "mainnet" for production |
-| STELLAR\_HORIZON\_URL="https://horizon-testnet.stellar.org" |
-| STELLAR\_SOROBAN\_RPC\_URL="https://soroban-testnet.stellar.org" |
+| STELLAR\_HORIZON\_URL="<https://horizon-testnet.stellar.org>" |
+| STELLAR\_SOROBAN\_RPC\_URL="<https://soroban-testnet.stellar.org>" |
 | STELLAR\_RELAY\_KEYPAIR\_SECRET="S..."  \# Relay hot wallet (NEVER share) |
 | STELLAR\_RELAY\_PUBLIC\_KEY="G..." |
 |   |
@@ -1197,12 +1196,12 @@ Never commit secrets to git. All environment variables are injected at runtime. 
 | HTLC\_ADDRESS\_AVALANCHE="0x..." |
 |   |
 | \# RPC endpoints (use Alchemy / Infura in production) |
-| RPC\_ETHEREUM="https://eth-mainnet.g.alchemy.com/v2/YOUR\_KEY" |
-| RPC\_BASE="https://base-mainnet.g.alchemy.com/v2/YOUR\_KEY" |
-| RPC\_BNB="https://bsc-dataseed.binance.org/" |
-| RPC\_POLYGON="https://polygon-rpc.com" |
-| RPC\_ARBITRUM="https://arb1.arbitrum.io/rpc" |
-| RPC\_AVALANCHE="https://api.avax.network/ext/bc/C/rpc" |
+| RPC\_ETHEREUM="<https://eth-mainnet.g.alchemy.com/v2/YOUR\_KEY>" |
+| RPC\_BASE="<https://base-mainnet.g.alchemy.com/v2/YOUR\_KEY>" |
+| RPC\_BNB="<https://bsc-dataseed.binance.org/>" |
+| RPC\_POLYGON="<https://polygon-rpc.com>" |
+| RPC\_ARBITRUM="<https://arb1.arbitrum.io/rpc>" |
+| RPC\_AVALANCHE="<https://api.avax.network/ext/bc/C/rpc>" |
 |   |
 | \# ── Circle CCTP ─────────────────────────────────────────────── |
 | CIRCLE\_API\_KEY="your-circle-api-key" |
@@ -1223,20 +1222,20 @@ Never commit secrets to git. All environment variables are injected at runtime. 
 |   |
 | \# ── Email ───────────────────────────────────────────────────── |
 | RESEND\_API\_KEY="re\_..." |
-| EMAIL\_FROM="payments@tavio.io" |
+| EMAIL\_FROM="<payments@useroutr.io>" |
 |   |
 | \# ── Storage ─────────────────────────────────────────────────── |
 | R2\_ACCOUNT\_ID="your-cloudflare-account-id" |
 | R2\_ACCESS\_KEY\_ID="your-r2-access-key" |
 | R2\_SECRET\_ACCESS\_KEY="your-r2-secret-key" |
 | R2\_BUCKET\_NAME="useroutr-files" |
-| R2\_PUBLIC\_URL="https://files.tavio.io" |
+| R2\_PUBLIC\_URL="<https://files.useroutr.io>" |
 |   |
 | \# ── App ─────────────────────────────────────────────────────── |
 | PORT=3000 |
 | NODE\_ENV="development" |
-| FRONTEND\_URL="http://localhost:3001" |
-| CHECKOUT\_URL="http://localhost:3002" |
+| FRONTEND\_URL="<http://localhost:3001>" |
+| CHECKOUT\_URL="<http://localhost:3002>" |
 | USEROUTR\_FEE\_BPS=50    \# Default 0.5% platform fee |
 
 **10  ·  STEP-BY-STEP BUILD GUIDE**
@@ -1276,7 +1275,7 @@ Build the Stellar module. This is the heart of Useroutr. Everything routes throu
 | 7 | Install Stellar SDKs and create the Stellar Module bash npm install @stellar/stellar-sdk @stellar/typescript-wallet-sdk   nest generate module stellar apps/api/src/modules nest generate service stellar apps/api/src/modules   \# Implement in stellar.service.ts: \# \- createAccount() \# \- getAccount(publicKey) \# \- findStrictSendPaths(sourceAsset, amount, destAsset) \# \- findStrictReceivePaths(destAsset, amount, sourceAsset) \# \- executePathPayment(params) \# \- streamContractEvents(contractId, callback) \# \- fundTestnetAccount(publicKey)  \-- testnet only  |
 | :---: | :---- |
 
-| 8 | Build and deploy the Soroban HTLC Contract bash \# Install Rust and Stellar CLI curl \--proto "=https" \--tlsv1.2 \-sSf https://sh.rustup.rs | sh rustup target add wasm32-unknown-unknown cargo install \--locked stellar-cli \--features opt   \# Create HTLC contract cd contracts/soroban stellar contract init htlc   \# Copy HTLC contract code from Section 5 into htlc/src/lib.rs   \# Build cd htlc && cargo build \--target wasm32-unknown-unknown \--release   \# Run tests cargo test   \# Deploy to testnet stellar contract deploy \\   \--wasm target/wasm32-unknown-unknown/release/htlc.wasm \\   \--source YOUR\_KEYPAIR \\   \--network testnet   \# Save the contract ID to your .env as SOROBAN\_HTLC\_CONTRACT\_ID  |
+| 8 | Build and deploy the Soroban HTLC Contract bash \# Install Rust and Stellar CLI curl \--proto "=https" \--tlsv1.2 \-sSf <https://sh.rustup.rs> | sh rustup target add wasm32-unknown-unknown cargo install \--locked stellar-cli \--features opt   \# Create HTLC contract cd contracts/soroban stellar contract init htlc   \# Copy HTLC contract code from Section 5 into htlc/src/lib.rs   \# Build cd htlc && cargo build \--target wasm32-unknown-unknown \--release   \# Run tests cargo test   \# Deploy to testnet stellar contract deploy \\   \--wasm target/wasm32-unknown-unknown/release/htlc.wasm \\   \--source YOUR\_KEYPAIR \\   \--network testnet   \# Save the contract ID to your .env as SOROBAN\_HTLC\_CONTRACT\_ID  |
 | :---: | :---- |
 
 | 9 | Build and deploy the Fee Collector Contract bash cd contracts/soroban stellar contract init fee-collector \# Copy fee-collector code from Section 5 cargo build \--target wasm32-unknown-unknown \--release cargo test   \# Deploy to testnet stellar contract deploy \\   \--wasm target/wasm32-unknown-unknown/release/fee\_collector.wasm \\   \--source YOUR\_KEYPAIR \\   \--network testnet   \# Initialize the contract stellar contract invoke \\   \--id YOUR\_FEE\_COLLECTOR\_ID \\   \--source YOUR\_KEYPAIR \\   \--network testnet \\   \-- initialize \\   \--admin YOUR\_PUBLIC\_KEY \\   \--fee\_bps 50 \\   \--treasury YOUR\_TREASURY\_ADDRESS  |
@@ -1284,7 +1283,7 @@ Build the Stellar module. This is the heart of Useroutr. Everything routes throu
 
 ## **Phase 3 — Quote & Payment Core (Weeks 5–6)**
 
-| 10 | Build the Quote Service Implement the Quote Service as defined in Section 6.3. Wire it to the Stellar path payment finder. Test that quotes are locked in Redis and expire correctly after 30 seconds. bash \# Test quote creation via curl curl \-X POST http://localhost:3000/v1/quotes \\   \-H "Authorization: Bearer YOUR\_JWT" \\   \-H "Content-Type: application/json" \\   \-d '{"fromChain":"ethereum","fromAsset":"USDC","fromAmount":"100","toChain":"stellar","toAsset":"USDC"}'   \# Verify Redis TTL redis-cli TTL quote:YOUR\_QUOTE\_ID  \# Should return \~30  |
+| 10 | Build the Quote Service Implement the Quote Service as defined in Section 6.3. Wire it to the Stellar path payment finder. Test that quotes are locked in Redis and expire correctly after 30 seconds. bash \# Test quote creation via curl curl \-X POST <http://localhost:3000/v1/quotes> \\   \-H "Authorization: Bearer YOUR\_JWT" \\   \-H "Content-Type: application/json" \\   \-d '{"fromChain":"ethereum","fromAsset":"USDC","fromAmount":"100","toChain":"stellar","toAsset":"USDC"}'   \# Verify Redis TTL redis-cli TTL quote:YOUR\_QUOTE\_ID  \# Should return \~30  |
 | :---: | :---- |
 
 | 11 | Build the Payment Service — lifecycle Create payment → validate quote → create HTLC lock on Stellar → update status → emit webhook. This is the core business logic. Test every status transition. bash \# Status transitions to test: \# PENDING → QUOTE\_LOCKED → SOURCE\_LOCKED → STELLAR\_LOCKED \# → PROCESSING → COMPLETED \# → REFUNDING → REFUNDED (timeout path) \# → FAILED (error path)   \# Each transition must: \# 1\. Update DB \# 2\. Emit WebSocket event to dashboard \# 3\. Queue webhook delivery via BullMQ  |
@@ -1306,7 +1305,7 @@ Build the Stellar module. This is the heart of Useroutr. Everything routes throu
 | 15 | Integrate Wormhole Wormhole covers BNB Chain, Solana, and any asset that CCTP does not support natively. bash npm install @wormhole-foundation/sdk   \# Wormhole flow: \# 1\. Lock asset in Wormhole contract on source chain \# 2\. Wormhole guardian network signs a VAA (Verified Action Approval) \# 3\. Relay service polls for VAA availability \# 4\. Relay submits VAA to Stellar Wormhole receiver \# 5\. Wrapped asset available on Stellar \# 6\. Stellar path payment converts wrapped asset → USDC  |
 | :---: | :---- |
 
-| 16 | Integrate Layerswap (Starknet) bash \# Layerswap is REST API based — no SDK needed \# Sign up at layerswap.io and get API key   \# POST https://api.layerswap.io/api/swaps \# { source\_network: "STELLAR", dest\_network: "STARKNET", \#   source\_asset: "USDC", dest\_asset: "USDC", amount: ... }   \# Layerswap handles the bridging and delivers to Starknet address  |
+| 16 | Integrate Layerswap (Starknet) bash \# Layerswap is REST API based — no SDK needed \# Sign up at layerswap.io and get API key   \# POST <https://api.layerswap.io/api/swaps> \# { source\_network: "STELLAR", dest\_network: "STARKNET", \#   source\_asset: "USDC", dest\_asset: "USDC", amount: ... }   \# Layerswap handles the bridging and delivers to Starknet address  |
 | :---: | :---- |
 
 ## **Phase 6 — MoneyGram Fiat Ramp (Week 12\)**
@@ -1316,7 +1315,7 @@ Build the Stellar module. This is the heart of Useroutr. Everything routes throu
 
 ## **Phase 7 — Merchant Tools (Weeks 13–14)**
 
-| 18 | Build Payment Links module Generate short shareable URLs that point to the hosted checkout. When a link is opened, the checkout pre-fills with the configured amount, currency, and description. bash \# Endpoints: \# POST   /v1/payment-links \# GET    /v1/payment-links \# GET    /v1/payment-links/:id \# DELETE /v1/payment-links/:id \# GET    /pay/:linkId  (public — hosted checkout)   \# Link format: https://pay.tavio.io/l/ABC123  |
+| 18 | Build Payment Links module Generate short shareable URLs that point to the hosted checkout. When a link is opened, the checkout pre-fills with the configured amount, currency, and description. bash \# Endpoints: \# POST   /v1/payment-links \# GET    /v1/payment-links \# GET    /v1/payment-links/:id \# DELETE /v1/payment-links/:id \# GET    /pay/:linkId  (public — hosted checkout)   \# Link format: <https://pay.useroutr.io/l/ABC123>  |
 | :---: | :---- |
 
 | 19 | Build Invoicing module bash npm install puppeteer  \# or @react-pdf/renderer   \# Endpoints: \# POST   /v1/invoices \# GET    /v1/invoices \# GET    /v1/invoices/:id \# POST   /v1/invoices/:id/send \# POST   /v1/invoices/:id/mark-paid   \# PDF generation: \# Render invoice HTML template with Puppeteer \# Upload PDF to Cloudflare R2 \# Store R2 URL in invoice.pdfUrl \# Send PDF link via Resend email  |
@@ -1338,7 +1337,7 @@ Build the Stellar module. This is the heart of Useroutr. Everything routes throu
 | 23 | Security & Production readiness Do not skip this phase. These are not nice-to-haves — they are table stakes for a payment product. Rate limiting: 100 req/min per API key on all endpoints. 10 req/min on auth endpoints. Idempotency keys: All POST endpoints accept Idempotency-Key header. Duplicate requests return the same response. Webhook signature verification: HMAC-SHA256. Document the verification process for merchants. Input sanitization: All inputs validated with Zod. No raw user data in SQL queries (Prisma parameterizes automatically). Secrets audit: Verify no secrets in git history. Rotate all keys. Move to Railway env vars. Sentry integration: Error tracking on both API and frontend. Set up alerts for payment failures. Smart contract audit: Engage OtterSec, Halborn, or Trail of Bits. Budget $15k–$40k. Non-negotiable before mainnet. |
 | :---: | :---- |
 
-| 24 | Deploy to Railway (Staging) bash \# Railway CLI npm install \-g @railway/cli railway login railway new   \# Add services railway add \--plugin postgresql railway add \--plugin redis   \# Deploy API railway up   \# Add all environment variables via Railway dashboard \# Set up custom domains: \#   api.tavio.io      → Railway API service \#   dashboard.tavio.io → Railway dashboard service \#   checkout.tavio.io  → Railway checkout service   \# Set up Cloudflare as proxy in front of all domains  |
+| 24 | Deploy to Railway (Staging) bash \# Railway CLI npm install \-g @railway/cli railway login railway new   \# Add services railway add \--plugin postgresql railway add \--plugin redis   \# Deploy API railway up   \# Add all environment variables via Railway dashboard \# Set up custom domains: \#   api.useroutr.io      → Railway API service \#   dashboard.useroutr.io → Railway dashboard service \#   checkout.useroutr.io  → Railway checkout service   \# Set up Cloudflare as proxy in front of all domains  |
 | :---: | :---- |
 
 ## **Phase 10 — Launch (Weeks 19–20)**
@@ -1501,6 +1500,5 @@ Payment infrastructure requires a higher testing bar than a typical SaaS. A bug 
 | Polygon Amoy | faucet.polygon.technology |
 | Solana Devnet | solfaucet.com |
 
-| Build it like it's infrastructure. *Pay anything. Settle everywhere.* tavio.io  ·  docs.tavio.io  ·  A product of thirtn.com |
+| Build it like it's infrastructure. *Pay anything. Settle everywhere.* useroutr.io  ·  docs.useroutr.io  ·  A product of thirtn.com |
 | :---: |
-
