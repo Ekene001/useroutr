@@ -271,8 +271,14 @@ model Payout {
   completedAt     DateTime?
   failureReason   String?
   batchId         String?
+  idempotencyKey  String?      @unique
   createdAt       DateTime     @default(now())
   merchant        Merchant     @relation(fields: [merchantId], references: [id])
+
+  @@index([merchantId])
+  @@index([status])
+  @@index([batchId])
+  @@index([createdAt])
 }
 
 enum DestType {
